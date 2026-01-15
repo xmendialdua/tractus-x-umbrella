@@ -1,0 +1,161 @@
+# Custom values to override default .tx.test hosts with OVH LoadBalancer IP
+# Use with: helm upgrade portal . -f values-adopter-portal.yaml -f values-ovh-hosts.yaml -n portal
+
+portal:
+  portalAddress: "http://portal.51.75.198.189.nip.io"
+  portalBackendAddress: "http://portal-backend.51.75.198.189.nip.io"
+  centralidp:
+    address: "http://centralidp.51.75.198.189.nip.io"
+  sharedidpAddress: "http://sharedidp.51.75.198.189.nip.io"
+  semanticsAddress: "http://semantics.51.75.198.189.nip.io"
+  bpdm:
+    poolAddress: "http://business-partners.51.75.198.189.nip.io"
+    portalGateAddress: "http://business-partners.51.75.198.189.nip.io"
+  custodianAddress: "http://ssi-dim-wallet-stub.51.75.198.189.nip.io"
+  dimWrapper:
+    baseAddress: "http://ssi-dim-wallet-stub.51.75.198.189.nip.io"
+    tokenAddress: "http://ssi-dim-wallet-stub.51.75.198.189.nip.io/oauth/token"
+  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.51.75.198.189.nip.io/api/sts"
+  sdfactoryAddress: "http://sdfactory.51.75.198.189.nip.io"
+  clearinghouse:
+    default:
+      baseAddress: "http://validation.51.75.198.189.nip.io"
+      tokenAddress: "http://someiam.51.75.198.189.nip.io/realms/example/protocol/openid-connect/token"
+  issuerComponentAddress: "http://ssi-credential-issuer.51.75.198.189.nip.io"
+  frontend:
+    ingress:
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.75.198.189.nip.io"
+      hosts:
+        - host: "portal.51.75.198.189.nip.io"
+          paths:
+            - path: "/(.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "portal"
+                port: 8080
+            - path: "/registration/(.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "registration"
+                port: 8080
+            - path: "/((assets|documentation)/.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "assets"
+                port: 8080
+  backend:
+    administration:
+      issuerdid: "did:web:ssi-dim-wallet-stub.51.75.198.189.nip.io:BPNL00000003CRHK"
+    processesworker:
+      dim:
+        baseAddress: "http://ssi-dim-wallet-stub.51.75.198.189.nip.io"
+    ingress:
+      enabled: true
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/use-regex: "true"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.51.75.198.189.nip.io"
+      hosts:
+        - host: "portal-backend.51.75.198.189.nip.io"
+          paths:
+            - path: "/api/registration"
+              pathType: "Prefix"
+              backend:
+                service: "registration-service"
+                port: 8080
+            - path: "/api/administration"
+              pathType: "Prefix"
+              backend:
+                service: "administration-service"
+                port: 8080
+            - path: "/api/notification"
+              pathType: "Prefix"
+              backend:
+                service: "notification-service"
+                port: 8080
+            - path: "/api/provisioning"
+              pathType: "Prefix"
+              backend:
+                service: "provisioning-service"
+                port: 8080
+            - path: "/api/apps"
+              pathType: "Prefix"
+              backend:
+                service: "marketplace-app-service"
+                port: 8080
+            - path: "/api/services"
+              pathType: "Prefix"
+              backend:
+                service: "services-service"
+                port: 8080
+
+centralidp:
+  keycloak:
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      hostname: "centralidp.51.75.198.189.nip.io"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.75.198.189.nip.io"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+      tls: false
+    extraEnvVars:
+      - name: KEYCLOAK_FRONTEND_URL
+        value: "http://centralidp.51.75.198.189.nip.io/auth/"
+      - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+        value: "true"
+      - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
+        value: "false"
+      - name: KEYCLOAK_PRODUCTION
+        value: "false"
+      - name: KC_HTTP_ENABLED
+        value: "true"
+    realmSeeding:
+      clients:
+        registration:
+          redirects:
+            - http://portal.51.75.198.189.nip.io/*
+        portal:
+          rootUrl: http://portal.51.75.198.189.nip.io/home
+          redirects:
+            - http://portal.51.75.198.189.nip.io/*
+        semantics:
+          redirects:
+            - http://portal.51.75.198.189.nip.io/*
+      sharedidp: "http://sharedidp.51.75.198.189.nip.io"
+
+sharedidp:
+  keycloak:
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      hostname: "sharedidp.51.75.198.189.nip.io"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.75.198.189.nip.io"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+      tls: false
+    extraEnvVars:
+      - name: KEYCLOAK_FRONTEND_URL
+        value: "http://sharedidp.51.75.198.189.nip.io/auth/"
+      - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+        value: "true"
+      - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
+        value: "false"
+      - name: KEYCLOAK_PRODUCTION
+        value: "false"
+      - name: KC_HTTP_ENABLED
+        value: "true"
+
+pgadmin4:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - host: pgadmin4.51.75.198.189.nip.io
+        paths:
+          - path: /
+            pathType: Prefix

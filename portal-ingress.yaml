@@ -1,0 +1,177 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-frontend
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: portal.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-portal
+            port:
+              number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-centralidp
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: centralidp.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-centralidp
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-sharedidp
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: sharedidp.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-sharedidp
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-pgadmin4
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: pgadmin4.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-pgadmin4
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-portal-backend
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: portal-backend.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /api/administration(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-administration-service
+            port:
+              number: 8080
+      - path: /api/registration(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-registration-service
+            port:
+              number: 8080
+      - path: /api/apps(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-marketplace-app-service
+            port:
+              number: 8080
+      - path: /api/services(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-services-service
+            port:
+              number: 8080
+      - path: /api/notification(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-notification-service
+            port:
+              number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-assets
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: portal-assets.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-assets
+            port:
+              number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-registration
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: portal-registration.51.75.198.189.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: portal-registration
+            port:
+              number: 8080
