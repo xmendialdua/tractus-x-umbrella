@@ -127,6 +127,13 @@ centralidp:
           redirects:
             - http://portal.51.75.198.189.nip.io/*
       sharedidp: "http://sharedidp.51.75.198.189.nip.io"
+      identityProviders:
+        - alias: "CX-Operator"
+          config:
+            tokenUrl: "http://sharedidp.51.75.198.189.nip.io/auth/realms/CX-Operator/protocol/openid-connect/token"
+            authorizationUrl: "http://sharedidp.51.75.198.189.nip.io/auth/realms/CX-Operator/protocol/openid-connect/auth"
+            jwksUrl: "http://sharedidp.51.75.198.189.nip.io/auth/realms/CX-Operator/protocol/openid-connect/certs"
+            logoutUrl: "http://sharedidp.51.75.198.189.nip.io/auth/realms/CX-Operator/protocol/openid-connect/logout"
 
 sharedidp:
   keycloak:
@@ -149,6 +156,17 @@ sharedidp:
         value: "false"
       - name: KC_HTTP_ENABLED
         value: "true"
+    realmSeeding:
+      realms:
+        cxOperator:
+          clients:
+            central:
+              redirects:
+                - http://centralidp.51.75.198.189.nip.io/auth/realms/CX-Central/broker/CX-Operator/endpoint/*
+              clientAuthenticatorType: "client-jwt"
+              attributes:
+                jwks.url: "http://centralidp.51.75.198.189.nip.io/auth/realms/CX-Central/protocol/openid-connect/certs"
+                use.jwks.url: "true"
 
 pgadmin4:
   ingress:
