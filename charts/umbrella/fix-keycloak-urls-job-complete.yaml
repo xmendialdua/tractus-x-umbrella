@@ -1,0 +1,197 @@
+# Kubernetes Job to fix Keycloak URLs after initial deployment
+# This job corrects ALL URLs in both centralidp and sharedidp databases
+# that are not updated by realm seeding because it's idempotent
+#
+# Usage:
+#   1. Edit line 55 with your LoadBalancer IP
+#   2. kubectl apply -f fix-keycloak-urls-job-complete.yaml -n portal
+#   3. kubectl logs -n portal job/fix-keycloak-urls-complete -f
+#
+# IMPORTANT: Update the IP address (51.83.104.91) with your LoadBalancer IP
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fix-keycloak-urls-complete
+  labels:
+    app: fix-keycloak-urls-complete
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: fix-keycloak-urls-complete
+    spec:
+      restartPolicy: Never
+      initContainers:
+        # Wait for PostgreSQL pods to be ready
+        - name: wait-for-databases
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for centralidp-postgresql..."
+              kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql,app.kubernetes.io/instance=portal-centralidp --timeout=300s
+              echo "Waiting for sharedidp-postgresql..."
+              kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql,app.kubernetes.io/instance=portal-sharedidp --timeout=300s
+              echo "All databases are ready"
+      containers:
+        - name: fix-urls
+          image: bitnami/postgresql:15
+          env:
+            - name: PGPASSWORD_CENTRAL
+              valueFrom:
+                secretKeyRef:
+                  name: portal-centralidp-postgresql
+                  key: password
+            - name: PGPASSWORD_SHARED
+              valueFrom:
+                secretKeyRef:
+                  name: portal-sharedidp-postgresql
+                  key: password
+            # CHANGE THIS: Replace with your LoadBalancer IP
+            - name: EXTERNAL_IP
+              value: "51.83.104.91"
+            # DNS Suffix (change for production)
+            - name: DNS_SUFFIX
+              value: "nip.io"
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              
+              echo "=========================================="
+              echo "Starting Keycloak URL Fix Job (Complete)"
+              echo "External IP: $EXTERNAL_IP"
+              echo "DNS Suffix: $DNS_SUFFIX"
+              echo "=========================================="
+              
+              # Function to execute SQL on centralidp
+              exec_central() {
+                PGPASSWORD="$PGPASSWORD_CENTRAL" psql -h portal-centralidp-postgresql -U kccentral -d iamcentralidp -c "$1"
+              }
+              
+              # Function to execute SQL on sharedidp
+              exec_shared() {
+                PGPASSWORD="$PGPASSWORD_SHARED" psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "$1"
+              }
+              
+              echo ""
+              echo "=== FIXING CENTRAL IDP DATABASE ==="
+              echo ""
+              
+              # 1. Fix client root_url for Cl2-CX-Portal
+              echo "1. Updating client.root_url for Cl2-CX-Portal..."
+              exec_central "
+                UPDATE client 
+                SET root_url = 'http://portal.$EXTERNAL_IP.$DNS_SUFFIX/home' 
+                WHERE client_id = 'Cl2-CX-Portal';
+              "
+              echo "   ✓ root_url updated"
+              
+              # 2. Fix redirect_uris for PORTAL clients (Cl1, Cl2, Cl3)
+              echo "2. Updating redirect_uris for portal clients..."
+              exec_central "
+                UPDATE redirect_uris 
+                SET value = 'http://portal.$EXTERNAL_IP.$DNS_SUFFIX/*' 
+                WHERE client_id IN (
+                  SELECT id FROM client WHERE client_id IN ('Cl1-CX-Registration', 'Cl2-CX-Portal', 'Cl3-CX-Semantic')
+                );
+              "
+              ROWS=$(exec_central "SELECT COUNT(*) FROM redirect_uris r JOIN client c ON r.client_id = c.id WHERE c.client_id IN ('Cl1-CX-Registration', 'Cl2-CX-Portal', 'Cl3-CX-Semantic');" | sed -n '3p' | xargs)
+              echo "   ✓ $ROWS portal redirect_uris updated"
+              
+              # 3. Fix redirect_uris for BPDM Gate (Cl16)
+              echo "3. Updating redirect_uris for BPDM Gate..."
+              exec_central "
+                UPDATE redirect_uris 
+                SET value = 'http://partners-gate.$EXTERNAL_IP.$DNS_SUFFIX/*' 
+                WHERE client_id IN (
+                  SELECT id FROM client WHERE client_id = 'Cl16-CX-BPDMGate'
+                );
+              "
+              echo "   ✓ BPDM Gate redirect_uri updated"
+              
+              # 4. Fix redirect_uris for BPDM Pool (Cl7)
+              echo "4. Updating redirect_uris for BPDM Pool..."
+              exec_central "
+                UPDATE redirect_uris 
+                SET value = 'http://partners-pool.$EXTERNAL_IP.$DNS_SUFFIX/*' 
+                WHERE client_id IN (
+                  SELECT id FROM client WHERE client_id = 'Cl7-CX-BPDM'
+                );
+              "
+              echo "   ✓ BPDM Pool redirect_uri updated"
+              
+              # 5. Fix redirect_uris for Custodian/MIW (Cl5)
+              echo "5. Updating redirect_uris for Custodian..."
+              exec_central "
+                UPDATE redirect_uris 
+                SET value = 'http://managed-identity-wallets.$EXTERNAL_IP.$DNS_SUFFIX/*' 
+                WHERE client_id IN (
+                  SELECT id FROM client WHERE client_id = 'Cl5-CX-Custodian'
+                );
+              "
+              echo "   ✓ Custodian redirect_uri updated"
+              
+              # 6. Fix identity_provider_config URLs (tokenUrl, authorizationUrl, jwksUrl, logoutUrl)
+              echo "6. Updating identity_provider_config URLs for CX-Operator..."
+              exec_central "
+                UPDATE identity_provider_config 
+                SET value = REPLACE(value, 'sharedidp.tx.test', 'sharedidp.$EXTERNAL_IP.$DNS_SUFFIX')
+                WHERE identity_provider_id IN (
+                  SELECT internal_id FROM identity_provider WHERE provider_alias = 'CX-Operator'
+                )
+                AND name IN ('tokenUrl', 'authorizationUrl', 'jwksUrl', 'logoutUrl');
+              "
+              ROWS=$(exec_central "SELECT COUNT(*) FROM identity_provider_config WHERE value LIKE '%sharedidp.$EXTERNAL_IP.$DNS_SUFFIX%';" | sed -n '3p' | xargs)
+              echo "   ✓ $ROWS identity_provider_config URLs updated"
+              
+              echo ""
+              echo "=== FIXING SHARED IDP DATABASE ==="
+              echo ""
+              
+              # 7. Fix redirect_uri for central-idp client
+              echo "7. Updating redirect_uri for central-idp client..."
+              exec_shared "
+                UPDATE redirect_uris 
+                SET value = 'http://centralidp.$EXTERNAL_IP.$DNS_SUFFIX/auth/realms/CX-Central/broker/CX-Operator/endpoint/*'
+                WHERE client_id IN (SELECT id FROM client WHERE client_id = 'central-idp');
+              "
+              echo "   ✓ redirect_uri updated"
+              
+              # 8. Fix jwks.url in client_attributes
+              echo "8. Updating client_attributes.jwks.url for central-idp..."
+              exec_shared "
+                UPDATE client_attributes 
+                SET value = 'http://centralidp.$EXTERNAL_IP.$DNS_SUFFIX/auth/realms/CX-Central/protocol/openid-connect/certs'
+                WHERE name = 'jwks.url' 
+                AND client_id IN (SELECT id FROM client WHERE client_id = 'central-idp');
+              "
+              echo "   ✓ jwks.url updated"
+              
+              echo ""
+              echo "=========================================="
+              echo "Keycloak URL Fix Completed Successfully"
+              echo "=========================================="
+              echo ""
+              echo "URLs actualizadas:"
+              echo "  - Portal: http://portal.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "  - BPDM Gate: http://partners-gate.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "  - BPDM Pool: http://partners-pool.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "  - Custodian: http://managed-identity-wallets.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "  - Central IDP: http://centralidp.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "  - Shared IDP: http://sharedidp.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo ""
+              echo "NEXT STEPS:"
+              echo "1. Restart centralidp pods:"
+              echo "   kubectl delete pod -n portal -l app.kubernetes.io/name=centralidp"
+              echo ""
+              echo "2. Restart sharedidp pods:"
+              echo "   kubectl delete pod -n portal -l app.kubernetes.io/name=sharedidp"
+              echo ""
+              echo "3. Wait for pods to be ready and test login at:"
+              echo "   http://portal.$EXTERNAL_IP.$DNS_SUFFIX"
+              echo "=========================================="

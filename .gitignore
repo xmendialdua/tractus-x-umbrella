@@ -6,3 +6,6 @@ Chart.lock
 target/
 **/values-local.yaml
 **/your-values.yaml
+
+# Generated values files - do not commit (use template instead)
+**/values-hosts.yaml
