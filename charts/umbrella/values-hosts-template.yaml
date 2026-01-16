@@ -1,0 +1,183 @@
+# Template for custom values to override default hosts with dynamic IP and DNS suffix
+# This template uses wildcards that will be replaced during deployment:
+#   ${OVH_LB_IP}  - The LoadBalancer IP address
+#   ${DNS_SUFFIX} - The DNS suffix (e.g., 'nip.io' for dev or custom domain for production)
+#
+# To generate the actual values file, use the generate-values-hosts.sh script
+
+portal:
+  portalAddress: "http://portal.${OVH_LB_IP}.${DNS_SUFFIX}"
+  portalBackendAddress: "http://portal-backend.${OVH_LB_IP}.${DNS_SUFFIX}"
+  centralidp:
+    address: "http://centralidp.${OVH_LB_IP}.${DNS_SUFFIX}"
+  sharedidpAddress: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}"
+  semanticsAddress: "http://semantics.${OVH_LB_IP}.${DNS_SUFFIX}"
+  bpdm:
+    poolAddress: "http://business-partners.${OVH_LB_IP}.${DNS_SUFFIX}"
+    portalGateAddress: "http://business-partners.${OVH_LB_IP}.${DNS_SUFFIX}"
+  custodianAddress: "http://ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}"
+  dimWrapper:
+    baseAddress: "http://ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}"
+    tokenAddress: "http://ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}/oauth/token"
+  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}/api/sts"
+  sdfactoryAddress: "http://sdfactory.${OVH_LB_IP}.${DNS_SUFFIX}"
+  clearinghouse:
+    default:
+      baseAddress: "http://validation.${OVH_LB_IP}.${DNS_SUFFIX}"
+      tokenAddress: "http://someiam.${OVH_LB_IP}.${DNS_SUFFIX}/realms/example/protocol/openid-connect/token"
+  issuerComponentAddress: "http://ssi-credential-issuer.${OVH_LB_IP}.${DNS_SUFFIX}"
+  frontend:
+    ingress:
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.${OVH_LB_IP}.${DNS_SUFFIX}"
+      hosts:
+        - host: "portal.${OVH_LB_IP}.${DNS_SUFFIX}"
+          paths:
+            - path: "/(.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "portal"
+                port: 8080
+            - path: "/registration/(.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "registration"
+                port: 8080
+            - path: "/((assets|documentation)/.*)"
+              pathType: "ImplementationSpecific"
+              backend:
+                service: "assets"
+                port: 8080
+  backend:
+    administration:
+      issuerdid: "did:web:ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}:BPNL00000003CRHK"
+    processesworker:
+      dim:
+        baseAddress: "http://ssi-dim-wallet-stub.${OVH_LB_IP}.${DNS_SUFFIX}"
+    ingress:
+      enabled: true
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/use-regex: "true"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.${OVH_LB_IP}.${DNS_SUFFIX}"
+      hosts:
+        - host: "portal-backend.${OVH_LB_IP}.${DNS_SUFFIX}"
+          paths:
+            - path: "/api/registration"
+              pathType: "Prefix"
+              backend:
+                service: "registration-service"
+                port: 8080
+            - path: "/api/administration"
+              pathType: "Prefix"
+              backend:
+                service: "administration-service"
+                port: 8080
+            - path: "/api/notification"
+              pathType: "Prefix"
+              backend:
+                service: "notification-service"
+                port: 8080
+            - path: "/api/provisioning"
+              pathType: "Prefix"
+              backend:
+                service: "provisioning-service"
+                port: 8080
+            - path: "/api/apps"
+              pathType: "Prefix"
+              backend:
+                service: "marketplace-app-service"
+                port: 8080
+            - path: "/api/services"
+              pathType: "Prefix"
+              backend:
+                service: "services-service"
+                port: 8080
+
+centralidp:
+  keycloak:
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      hostname: "centralidp.${OVH_LB_IP}.${DNS_SUFFIX}"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.${OVH_LB_IP}.${DNS_SUFFIX}"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+      tls: false
+    extraEnvVars:
+      - name: KEYCLOAK_FRONTEND_URL
+        value: "http://centralidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/"
+      - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+        value: "true"
+      - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
+        value: "false"
+      - name: KEYCLOAK_PRODUCTION
+        value: "false"
+      - name: KC_HTTP_ENABLED
+        value: "true"
+    realmSeeding:
+      clients:
+        registration:
+          redirects:
+            - http://portal.${OVH_LB_IP}.${DNS_SUFFIX}/*
+        portal:
+          rootUrl: http://portal.${OVH_LB_IP}.${DNS_SUFFIX}/home
+          redirects:
+            - http://portal.${OVH_LB_IP}.${DNS_SUFFIX}/*
+        semantics:
+          redirects:
+            - http://portal.${OVH_LB_IP}.${DNS_SUFFIX}/*
+      sharedidp: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}"
+      identityProviders:
+        - alias: "CX-Operator"
+          config:
+            tokenUrl: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Operator/protocol/openid-connect/token"
+            authorizationUrl: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Operator/protocol/openid-connect/auth"
+            jwksUrl: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Operator/protocol/openid-connect/certs"
+            logoutUrl: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Operator/protocol/openid-connect/logout"
+
+sharedidp:
+  keycloak:
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      hostname: "sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}"
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.${OVH_LB_IP}.${DNS_SUFFIX}"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+      tls: false
+    extraEnvVars:
+      - name: KEYCLOAK_FRONTEND_URL
+        value: "http://sharedidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/"
+      - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+        value: "true"
+      - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
+        value: "false"
+      - name: KEYCLOAK_PRODUCTION
+        value: "false"
+      - name: KC_HTTP_ENABLED
+        value: "true"
+    realmSeeding:
+      realms:
+        cxOperator:
+          clients:
+            central:
+              redirects:
+                - http://centralidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Central/broker/CX-Operator/endpoint/*
+              clientAuthenticatorType: "client-jwt"
+              attributes:
+                jwks.url: "http://centralidp.${OVH_LB_IP}.${DNS_SUFFIX}/auth/realms/CX-Central/protocol/openid-connect/certs"
+                use.jwks.url: "true"
+
+pgadmin4:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - host: pgadmin4.${OVH_LB_IP}.${DNS_SUFFIX}
+        paths:
+          - path: /
+            pathType: Prefix
