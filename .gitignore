@@ -9,3 +9,13 @@ target/
 
 # Generated values files - do not commit (use template instead)
 **/values-hosts.yaml
+terraform-ovh/terraform.tfvars
+terraform-ovh/terraform.tfstate
+terraform-ovh/terraform.tfstate.backup
+terraform-ovh/terraform.tfvars.01
+terraform-ovh/test_permissions.tf.bak
+kubeconfig_3.yaml
+kubeconfig-cul9qm.yml
+terraform.tfstate
+terraform-ovh/tfplan
+.terraform/
