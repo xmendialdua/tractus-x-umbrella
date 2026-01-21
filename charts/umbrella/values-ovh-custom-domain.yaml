@@ -1,0 +1,44 @@
+# values-custom-domain.yaml  
+global:  
+  domainSuffix: "83.44.55.66.npi.io"  
+  
+centralidp:  
+  keycloak:  
+    ingress:  
+      hostname: "centralidp.83.44.55.66.npi.io"  
+  address: "http://centralidp.83.44.55.66.npi.io"  
+  realmSeeding:  
+    clients:  
+      portal:  
+        rootUrl: "http://portal.83.44.55.66.npi.io/home"  
+        redirects:  
+          - "http://portal.83.44.55.66.npi.io/*"  
+      registration:  
+        redirects:  
+          - "http://portal.83.44.55.66.npi.io/*"  
+      semantics:  
+        redirects:  
+          - "http://portal.83.44.55.66.npi.io/*"  
+      miw:  
+        redirects:  
+          - "http://managed-identity-wallets.83.44.55.66.npi.io/*"  
+      bpdm:  
+        redirects:  
+          - "http://partners-pool.83.44.55.66.npi.io/*"  
+      bpdmGate:  
+        redirects:  
+          - "http://partners-gate.83.44.55.66.npi.io/*"  
+    sharedidp: "http://sharedidp.83.44.55.66.npi.io"  
+  
+sharedidp:  
+  keycloak:  
+    ingress:  
+      hostname: "sharedidp.83.44.55.66.npi.io"  
+  realmSeeding:  
+    realms:  
+      cxOperator:  
+        centralidp: "http://centralidp.83.44.55.66.npi.io"  
+        mailing:  
+          host: "smtp.83.44.55.66.npi.io"  
+          from: "smtp@83.44.55.66.npi.io"  
+          replyTo: "smtp@83.44.55.66.npi.io"
