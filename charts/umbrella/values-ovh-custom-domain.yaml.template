@@ -1,0 +1,44 @@
+# values-custom-domain.yaml  
+global:  
+  domainSuffix: "__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+  
+centralidp:  
+  keycloak:  
+    ingress:  
+      hostname: "centralidp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+  address: "http://centralidp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+  realmSeeding:  
+    clients:  
+      portal:  
+        rootUrl: "http://portal.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/home"  
+        redirects:  
+          - "http://portal.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+      registration:  
+        redirects:  
+          - "http://portal.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+      semantics:  
+        redirects:  
+          - "http://portal.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+      miw:  
+        redirects:  
+          - "http://managed-identity-wallets.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+      bpdm:  
+        redirects:  
+          - "http://partners-pool.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+      bpdmGate:  
+        redirects:  
+          - "http://partners-gate.__LOAD_BALANCER_IP__.__DNS_SUFFIX__/*"  
+    sharedidp: "http://sharedidp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+  
+sharedidp:  
+  keycloak:  
+    ingress:  
+      hostname: "sharedidp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+  realmSeeding:  
+    realms:  
+      cxOperator:  
+        centralidp: "http://centralidp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+        mailing:  
+          host: "smtp.__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+          from: "smtp@__LOAD_BALANCER_IP__.__DNS_SUFFIX__"  
+          replyTo: "smtp@__LOAD_BALANCER_IP__.__DNS_SUFFIX__"
