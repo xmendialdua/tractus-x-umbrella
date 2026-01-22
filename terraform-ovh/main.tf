@@ -45,25 +45,32 @@ resource "ovh_cloud_project_kube_nodepool" "node_pool" {
   min_nodes     = 1      #   Actualizar más adelante a 3
 }
 
-# 5. Extraer el archivo Kubeconfig automáticamente para conectar desde VS Code
+# 5. Generar automáticamente el archivo kubeconfig.yaml
+resource "local_file" "kubeconfig" {
+  content  = ovh_cloud_project_kube.my_kube_cluster.kubeconfig
+  filename = "${path.module}/kubeconfig.yaml"
+  file_permission = "0600"
+}
+
+# 6. Extraer el archivo Kubeconfig automáticamente para conectar desde VS Code
 output "kubeconfig_data" {
   value     = ovh_cloud_project_kube.my_kube_cluster.kubeconfig
   sensitive = true
 }
 
-# 6. Obtener el ID del cluster
+# 7. Obtener el ID del cluster
 output "cluster_id" {
   value       = ovh_cloud_project_kube.my_kube_cluster.id
   description = "ID único del cluster (ej: cul9qm)"
 }
 
-# 7. Obtener la URL del cluster
+# 8. Obtener la URL del cluster
 output "cluster_url" {
   value       = ovh_cloud_project_kube.my_kube_cluster.url
   description = "URL completa del API Server"
 }
 
-# 8. Obtener información completa del cluster
+# 9. Obtener información completa del cluster
 output "cluster_info" {
   value = {
     id      = ovh_cloud_project_kube.my_kube_cluster.id
