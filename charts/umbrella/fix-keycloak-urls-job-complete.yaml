@@ -38,7 +38,7 @@ spec:
               echo "All databases are ready"
       containers:
         - name: fix-urls
-          image: bitnami/postgresql:15
+          image: bitnamilegacy/postgresql:15-debian-11
           env:
             - name: PGPASSWORD_CENTRAL
               valueFrom:
@@ -52,7 +52,7 @@ spec:
                   key: password
             # CHANGE THIS: Replace with your LoadBalancer IP
             - name: EXTERNAL_IP
-              value: "51.83.104.91"
+              value: "51.83.111.178"
             # DNS Suffix (change for production)
             - name: DNS_SUFFIX
               value: "nip.io"
