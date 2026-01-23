@@ -32,23 +32,21 @@ resource "ovh_cloud_project_kube" "my_kube_cluster" {
   # Al no definir 'private_network_id', se crea sobre la red pública (Ninguna red privada)
 }
 
-# TODO: Más adelante actualizar desired nodes a 3, junto con max_nodes y min_nodes
-
 # 4. El Grupo de Nodos: "tractus-x-umbrella"
 resource "ovh_cloud_project_kube_nodepool" "node_pool" {
   service_name  = var.ovh_service_name
   kube_id       = ovh_cloud_project_kube.my_kube_cluster.id
   name          = "tractus-x-umbrella"  # Nombre del pool
   flavor_name   = "b2-7"     # Tipo de nodo B2-7 (Propósito General)
-  desired_nodes = 1      # Empezamos con 1 solo nodo para aprender     # Actualizar más adelante a 3 nodos fijos
-  max_nodes     = 2      # Actualizar más adelante a 3
-  min_nodes     = 1      #   Actualizar más adelante a 3
+  desired_nodes = 3      # 3 nodos para el portal
+  max_nodes     = 3
+  min_nodes     = 3
 }
 
 # 5. Generar automáticamente el archivo kubeconfig.yaml
 resource "local_file" "kubeconfig" {
   content  = ovh_cloud_project_kube.my_kube_cluster.kubeconfig
-  filename = "${path.module}/kubeconfig.yaml"
+  filename = "${path.module}/../kubeconfig.yaml"
   file_permission = "0600"
 }
 
