@@ -52,7 +52,7 @@ spec:
                   key: password
             # CHANGE THIS: Replace with your LoadBalancer IP
             - name: EXTERNAL_IP
-              value: "51.83.111.178"
+              value: "51.68.114.44"
             # DNS Suffix (change for production)
             - name: DNS_SUFFIX
               value: "nip.io"
