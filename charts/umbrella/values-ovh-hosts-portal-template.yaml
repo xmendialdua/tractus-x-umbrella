@@ -106,6 +106,10 @@ centralidp:
       annotations:
         nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
         nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/affinity: "cookie"
+        nginx.ingress.kubernetes.io/session-cookie-name: "route"
+        nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
@@ -118,35 +122,6 @@ centralidp:
         value: "false"
       - name: KC_HTTP_ENABLED
         value: "true"
-    realmSeeding:
-      clients:
-        registration:
-          redirects:
-            - http://portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-        portal:
-          rootUrl: http://portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/home
-          redirects:
-            - http://portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-        semantics:
-          redirects:
-            - http://portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-        miw:
-          redirects:
-            - http://managed-identity-wallets.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-        bpdm:
-          redirects:
-            - http://partners-pool.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-        bpdmGate:
-          redirects:
-            - http://partners-gate.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/*
-      sharedidp: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-      identityProviders:
-        - alias: "CX-Operator"
-          config:
-            tokenUrl: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Operator/protocol/openid-connect/token"
-            authorizationUrl: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Operator/protocol/openid-connect/auth"
-            jwksUrl: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Operator/protocol/openid-connect/certs"
-            logoutUrl: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Operator/protocol/openid-connect/logout"
 
 sharedidp:
   keycloak:
@@ -157,6 +132,10 @@ sharedidp:
       annotations:
         nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
         nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/affinity: "cookie"
+        nginx.ingress.kubernetes.io/session-cookie-name: "route"
+        nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
@@ -169,22 +148,6 @@ sharedidp:
         value: "false"
       - name: KC_HTTP_ENABLED
         value: "true"
-    realmSeeding:
-      realms:
-        cxOperator:
-          centralidp: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-          clients:
-            central:
-              redirects:
-                - http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central/broker/CX-Operator/endpoint/*
-              clientAuthenticatorType: "client-jwt"
-              attributes:
-                jwks.url: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central/protocol/openid-connect/certs"
-                use.jwks.url: "true"
-          mailing:
-            host: "smtp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-            from: "smtp@{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-            replyTo: "smtp@{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
 
 pgadmin4:
   ingress:
