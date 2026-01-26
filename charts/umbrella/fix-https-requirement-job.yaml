@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fix-https-requirement
+  namespace: portal
+spec:
+  template:
+    spec:
+      containers:
+      - name: fix-https
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "==========================================
+            Fixing HTTPS requirement in Keycloak realms
+            =========================================="
+            
+            echo "=== Updating Central IDP realm SSL settings ==="
+            export PGPASSWORD="${CENTRAL_PASSWORD}"
+            psql -h portal-centralidp-postgresql -U kccentral -d iamcentralidp <<EOF
+            UPDATE realm SET ssl_required = 'NONE' WHERE name = 'master';
+            UPDATE realm SET ssl_required = 'NONE' WHERE name = 'CX-Central';
+            SELECT name, ssl_required FROM realm WHERE name IN ('master', 'CX-Central');
+            EOF
+            
+            echo ""
+            echo "=== Updating Shared IDP realm SSL settings ==="
+            export PGPASSWORD="${SHARED_PASSWORD}"
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp <<EOF
+            UPDATE realm SET ssl_required = 'NONE' WHERE name = 'master';
+            UPDATE realm SET ssl_required = 'NONE' WHERE name = 'CX-Operator';
+            SELECT name, ssl_required FROM realm WHERE name IN ('master', 'CX-Operator');
+            EOF
+            
+            echo ""
+            echo "=========================================="
+            echo "HTTPS requirement disabled successfully!"
+            echo "Restart Keycloak pods to apply changes:"
+            echo "  kubectl delete pod -n portal -l app.kubernetes.io/name=centralidp"
+            echo "  kubectl delete pod -n portal -l app.kubernetes.io/name=sharedidp"
+            echo "=========================================="
+        env:
+        - name: CENTRAL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: portal-centralidp-postgresql
+              key: password
+        - name: SHARED_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: portal-sharedidp-postgresql
+              key: password
+      restartPolicy: Never
+  backoffLimit: 3

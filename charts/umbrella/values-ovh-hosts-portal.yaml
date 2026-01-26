@@ -3,36 +3,36 @@
 # This template merges values-ovh-hosts.yaml and values-ovh-custom-domain.yaml
 
 global:
-  domainSuffix: "{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+  domainSuffix: "51.68.114.44.nip.io"
 
 portal:
-  portalAddress: "http://portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-  portalBackendAddress: "http://portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+  portalAddress: "http://portal.51.68.114.44.nip.io"
+  portalBackendAddress: "http://portal-backend.51.68.114.44.nip.io"
   centralidp:
-    address: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-  sharedidpAddress: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-  semanticsAddress: "http://semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    address: "http://centralidp.51.68.114.44.nip.io"
+  sharedidpAddress: "http://sharedidp.51.68.114.44.nip.io"
+  semanticsAddress: "http://semantics.51.68.114.44.nip.io"
   bpdm:
-    poolAddress: "http://business-partners.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-    portalGateAddress: "http://business-partners.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-  custodianAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    poolAddress: "http://business-partners.51.68.114.44.nip.io"
+    portalGateAddress: "http://business-partners.51.68.114.44.nip.io"
+  custodianAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
   dimWrapper:
-    baseAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-    tokenAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/oauth/token"
-  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/api/sts"
-  sdfactoryAddress: "http://sdfactory.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    baseAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+    tokenAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/oauth/token"
+  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/api/sts"
+  sdfactoryAddress: "http://sdfactory.51.68.114.44.nip.io"
   clearinghouse:
     default:
-      baseAddress: "http://validation.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
-      tokenAddress: "http://someiam.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/realms/example/protocol/openid-connect/token"
-  issuerComponentAddress: "http://ssi-credential-issuer.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      baseAddress: "http://validation.51.68.114.44.nip.io"
+      tokenAddress: "http://someiam.51.68.114.44.nip.io/realms/example/protocol/openid-connect/token"
+  issuerComponentAddress: "http://ssi-credential-issuer.51.68.114.44.nip.io"
   frontend:
     ingress:
       className: "nginx"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
       hosts:
-        - host: "portal.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        - host: "portal.51.68.114.44.nip.io"
           paths:
             - path: "/(.*)"
               pathType: "ImplementationSpecific"
@@ -51,10 +51,10 @@ portal:
                 port: 8080
   backend:
     administration:
-      issuerdid: "did:web:ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}:BPNL00000003CRHK"
+      issuerdid: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
     processesworker:
       dim:
-        baseAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        baseAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
     ingress:
       enabled: true
       className: "nginx"
@@ -62,9 +62,9 @@ portal:
         nginx.ingress.kubernetes.io/use-regex: "true"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/proxy-body-size: "8m"
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.51.68.114.44.nip.io"
       hosts:
-        - host: "portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        - host: "portal-backend.51.68.114.44.nip.io"
           paths:
             - path: "/api/registration"
               pathType: "Prefix"
@@ -102,9 +102,9 @@ centralidp:
     ingress:
       enabled: true
       ingressClassName: "nginx"
-      hostname: "centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      hostname: "centralidp.51.68.114.44.nip.io"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/affinity: "cookie"
         nginx.ingress.kubernetes.io/session-cookie-name: "route"
@@ -113,7 +113,7 @@ centralidp:
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
-        value: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/"
+        value: "http://centralidp.51.68.114.44.nip.io/auth/"
       - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
         value: "true"
       - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
@@ -129,7 +129,7 @@ centralidp:
       - name: KC_PROXY
         value: "edge"
       - name: KC_HOSTNAME
-        value: "centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        value: "centralidp.51.68.114.44.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
 
@@ -138,9 +138,9 @@ sharedidp:
     ingress:
       enabled: true
       ingressClassName: "nginx"
-      hostname: "sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      hostname: "sharedidp.51.68.114.44.nip.io"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/affinity: "cookie"
         nginx.ingress.kubernetes.io/session-cookie-name: "route"
@@ -149,7 +149,7 @@ sharedidp:
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
-        value: "http://sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/"
+        value: "http://sharedidp.51.68.114.44.nip.io/auth/"
       - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
         value: "true"
       - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
@@ -165,7 +165,7 @@ sharedidp:
       - name: KC_PROXY
         value: "edge"
       - name: KC_HOSTNAME
-        value: "sharedidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        value: "sharedidp.51.68.114.44.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
 
@@ -174,7 +174,7 @@ pgadmin4:
     enabled: true
     ingressClassName: nginx
     hosts:
-      - host: pgadmin4.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}
+      - host: pgadmin4.51.68.114.44.nip.io
         paths:
           - path: /
             pathType: Prefix
