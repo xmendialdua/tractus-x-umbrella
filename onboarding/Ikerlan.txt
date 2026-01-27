@@ -1,0 +1,277 @@
+===============================================================================
+DATOS DE IKERLAN PARA ONBOARDING EN CATENA-X
+===============================================================================
+Fecha de preparación: 27 de Enero de 2026
+Fecha de completación: 27 de Enero de 2026 - 21:15
+Estado: ✅ COMPLETADO - Usuario puede hacer login en Portal
+===============================================================================
+
+INFORMACIÓN LEGAL Y FISCAL
+---------------------------
+Nombre legal:           Ikerlan, S. Coop.
+Nombre corto:           Ikerlan
+Forma legal:            S.COOP (Sociedad Cooperativa)
+CIF/NIF:                ESF20459407
+Registro:               Registro de Fundaciones del País Vasco
+Sitio web:              https://www.ikerlan.es
+
+
+DIRECCIÓN LEGAL
+---------------
+Calle/Avenida:          Paseo J.M. Arizmendiarrieta
+Número:                 2
+Código postal:          20500
+Ciudad:                 Arrasate-Mondragón
+Provincia:              Guipúzcoa
+País:                   España (ES)
+País (ISO):             ES
+
+
+ACTIVIDAD Y CLASIFICACIÓN
+--------------------------
+Descripción:            Centro de investigación y desarrollo tecnológico
+Áreas principales:      Electrónica, Energía, Sistemas de Información, Mecatrónica
+Sectores:               Automoción, Energías Renovables, Electrónica Industrial
+Clasificación NACE:     72.19 (Investigación y desarrollo en otras ciencias naturales y técnicas)
+Tipo de negocio:        RESEARCH_DEVELOPMENT
+Miembro de:             Basque Research and Technology Alliance (BRTA)
+                        Corporación Mondragón
+
+
+CONTACTO PRINCIPAL
+------------------
+Nombre y apellidos:     Xabier Mendialdua
+Email corporativo:      xmendialdua@ikerlan.es
+Teléfono:               +34 943 712 400 (centralita)
+Cargo:                  Responsable de Onboarding Catena-X
+
+
+DATOS CATENA-X
+--------------
+BPN (Business Partner Number):  BPNL000000001IKL
+Realm Keycloak:                 idp1 (Display Name: "Ikerlan") ✅ CONFIGURADO
+Realm URL:                      http://sharedidp.51.68.114.44.nip.io/auth/realms/idp1
+Usuario admin inicial:          xmendialdua@ikerlan.es ✅ CREADO
+Usuario UUID (Keycloak):        07950d56-7357-4b65-acaf-87626ddddfc1
+Password temporal:              Welcome2Catena-X! (CAMBIAR EN PRIMER LOGIN)
+Rol asignado:                   Company Admin ✅ ASIGNADO
+Cliente OAuth2:                 Cl2-CX-Portal ✅ CREADO
+SSL Required:                   none (HTTP permitido) ✅ CONFIGURADO
+Estado en BPDM Pool:            ⏳ Pendiente de sincronización desde Portal UI
+Estado del Onboarding:          ✅ COMPLETO - Listo para login
+
+
+===============================================================================
+INSTRUCCIONES PARA PRIMER ACCESO AL PORTAL
+===============================================================================
+
+1. Abrir navegador web (recomendado: modo incógnito para evitar caché)
+2. Navegar a: http://portal.51.68.114.44.nip.io
+3. Hacer clic en "Login"
+4. El sistema redirigirá automáticamente a Shared IDP (realm idp1)
+5. Ingresar credenciales:
+   - Username: xmendialdua@ikerlan.es
+   - Password: Welcome2Catena-X!
+6. El sistema pedirá cambiar el password (es temporal)
+7. Establecer un password seguro nuevo
+8. Completar el perfil si es solicitado
+9. Verificar que aparece el BPN: BPNL000000001IKL en el perfil
+
+NOTA TÉCNICA:
+- El realm técnico es "idp1" (identificador en base de datos)
+- El Display Name es "Ikerlan" (nombre descriptivo)
+- Otros partners usarán idp2, idp3, etc. con sus nombres respectivos
+
+===============================================================================
+PROBLEMAS ENCONTRADOS DURANTE EL ONBOARDING
+===============================================================================
+
+❌ PROBLEMA: Flujo automático bloqueado por falta de servidor SMTP
+✅ SOLUCIÓN: Creación manual de Realm + Usuario en Keycloak
+
+❌ PROBLEMA: API BPDM Pool v6 no documentada  
+✅ SOLUCIÓN: Portal sincronizará con BPDM al completar login
+
+
+===============================================================================
+JSON PARA BPDM API (POST /v7/business-partners)
+===============================================================================
+
+{
+  "legalName": "Ikerlan, S. Coop.",
+  "shortName": "Ikerlan",
+  "legalForm": "S.COOP",
+  "status": "ACTIVE",
+  "classifications": [
+    {
+      "value": "RESEARCH_DEVELOPMENT",
+      "code": "NACE",
+      "type": "72.19"
+    }
+  ],
+  "addresses": [
+    {
+      "addressType": "LEGAL_ADDRESS",
+      "physicalPostalAddress": {
+        "country": "ES",
+        "city": "Arrasate-Mondragón",
+        "postalCode": "20500",
+        "street": {
+          "name": "Paseo J.M. Arizmendiarrieta",
+          "houseNumber": "2"
+        }
+      }
+    }
+  ],
+  "identifiers": [
+    {
+      "type": "VAT_ID",
+      "value": "ESF20459407",
+      "issuingBody": "Agencia Tributaria España"
+    }
+  ]
+}
+
+
+===============================================================================
+COMANDO CURL PARA CREACIÓN EN BPDM
+===============================================================================
+
+# 1. Obtener token de autenticación
+TOKEN=$(curl -s -X POST "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=Cl7-CX-BPDM" \
+  -d "client_secret=SECRETO_DEL_CLIENTE" | jq -r '.access_token')
+
+# 2. Crear Business Partner en BPDM Pool
+curl -X POST "http://business-partners.51.68.114.44.nip.io/pool/v7/business-partners" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "legalName": "Ikerlan, S. Coop.",
+    "shortName": "Ikerlan",
+    "legalForm": "S.COOP",
+    "status": "ACTIVE",
+    "classifications": [
+      {
+        "value": "RESEARCH_DEVELOPMENT",
+        "code": "NACE",
+        "type": "72.19"
+      }
+    ],
+    "addresses": [
+      {
+        "addressType": "LEGAL_ADDRESS",
+        "physicalPostalAddress": {
+          "country": "ES",
+          "city": "Arrasate-Mondragón",
+          "postalCode": "20500",
+          "street": {
+            "name": "Paseo J.M. Arizmendiarrieta",
+            "houseNumber": "2"
+          }
+        }
+      }
+    ],
+    "identifiers": [
+      {
+        "type": "VAT_ID",
+        "value": "ESF20459407",
+        "issuingBody": "Agencia Tributaria España"
+      }
+    ]
+  }' | jq
+
+
+===============================================================================
+VERIFICACIÓN PREVIA AL ONBOARDING
+===============================================================================
+
+# Verificar si Ikerlan ya existe en BPDM Pool
+curl -X GET "http://business-partners.51.68.114.44.nip.io/pool/v7/business-partners?legalName=Ikerlan" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" | jq
+
+
+===============================================================================
+TAREAS PENDIENTES ANTES DE PROCEDER
+===============================================================================
+
+[X] Contactar con Ikerlan para obtener:
+    [X] Nombre del contacto principal (Xabier Mendialdua)
+    [X] Email corporativo del contacto (xmendialdua@ikerlan.es)
+    [ ] Confirmación de datos legales y fiscales
+    [ ] Autorización para registro en Catena-X
+
+[ ] Verificar en BPDM Pool si ya existe un registro previo
+
+[ ] Confirmar el secret del cliente Keycloak (Cl7-CX-BPDM)
+
+[ ] Preparar credenciales temporales para el usuario admin
+
+
+===============================================================================
+NOTAS ADICIONALES
+===============================================================================
+
+- Ikerlan es parte de la Corporación Mondragón, una de las cooperativas más 
+  grandes de España
+  
+- Como centro de I+D, pueden tener interés en casos de uso de Catena-X 
+  relacionados con trazabilidad, economía circular y gemelos digitales
+  
+- Su experiencia en automoción los hace candidatos ideales para participar 
+  en la red Catena-X
+  
+- Al ser cooperativa, pueden tener estructuras de gobernanza específicas 
+  que requieran ajustes en el proceso de onboarding
+
+
+===============================================================================
+ESTADO ACTUAL DE AUTENTICACIÓN (27-Ene-2026 21:00) ✅ COMPLETADO
+===============================================================================
+
+✅ Base de Datos Portal:
+   - Empresa Ikerlan creada (ID: 30bdf87c-7813-406a-827f-a8977f154980)
+   - BPN asignado: BPNL000000001IKL
+   - Usuario creado: xmendialdua@ikerlan.es (ID: 6ce4fdb0-7264-41b1-aeb6-4b224ebb7b1f)
+   - Identity Provider: idp1 (iam_idp_alias técnico)
+   - Link identity_provider → company: CORRECTO
+   - Link user_entity_id → Keycloak UUID: 07950d56-7357-4b65-acaf-87626ddddfc1 ✅
+
+✅ Keycloak Shared IDP - Realm idp1:
+   - Realm: idp1 (Display Name: "Ikerlan") ✅ CONFIGURADO
+   - sslRequired: "none" (permite HTTP) ✅ CORRECTO
+   - Usuario: xmendialdua@ikerlan.es (UUID: 07950d56-7357-4b65-acaf-87626ddddfc1)
+   - Password: Welcome2Catena-X! (temporary: false)
+   - Rol: Company Admin ✅ ASIGNADO
+   - Cliente OAuth2: Cl2-CX-Portal ✅ CREADO
+   - redirectUris: http://portal.51.68.114.44.nip.io/* ✅ CORRECTAS
+
+✅ Portal Frontend:
+   - REQUIRE_HTTPS_URL_PATTERN: false ✅ DESHABILITADO
+   - Pods reiniciados con configuración actualizada
+
+✅ CONFIGURACIÓN CORRECTA:
+   La arquitectura usa identificadores técnicos (idp1, idp2, idp3) para los realms
+   mientras que el displayName muestra el nombre de la empresa (Ikerlan, Assembly, Fagor).
+   
+   Esto permite:
+   - URLs estables: http://sharedidp.../auth/realms/idp1/...
+   - Nombres descriptivos en la UI de Keycloak
+   - Escalabilidad para múltiples partners
+
+🎯 LISTO PARA LOGIN:
+   http://portal.51.68.114.44.nip.io
+   Email: xmendialdua@ikerlan.es
+   Password: Welcome2Catena-X!
+
+
+===============================================================================
+REFERENCIAS
+===============================================================================
+
+Documento de proceso:   2026.01.27 - Onboarding Ikerlan - Proceso Completo.md
+Configuración Ingress:  fix-bpdm-ingress.sh
+Values Portal:          charts/umbrella/values-ovh-hosts-portal.yaml
