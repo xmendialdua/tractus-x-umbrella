@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# Patchear Manualmente los 3 Ingress de bpdm
+# ---------------------------------------------------------------------------
+
+# Vamos a patchear los 3 Ingress con kubectl. Son cambios quirúrgicos que NO afectarán a los pods ni a la BD:
+
+# Comando 1: Pool
+
+	kubectl patch ingress portal-bpdm-pool -n portal --type=json -p='[
+	  {"op": "add", "path": "/spec/ingressClassName", "value": "nginx"},
+	  {"op": "replace", "path": "/spec/rules/0/host", "value": "business-partners.51.68.114.44.nip.io"}
+	]'
+
+# Comando 2: Gate
+
+	kubectl patch ingress portal-bpdm-gate -n portal --type=json -p='[
+	  {"op": "add", "path": "/spec/ingressClassName", "value": "nginx"},
+	  {"op": "replace", "path": "/spec/rules/0/host", "value": "business-partners.51.68.114.44.nip.io"}
+	]'
+	
+# Comando 3: Orchestrator
+
+	kubectl patch ingress portal-bpdm-orchestrator -n portal --type=json -p='[
+	  {"op": "add", "path": "/spec/ingressClassName", "value": "nginx"},
+	  {"op": "replace", "path": "/spec/rules/0/host", "value": "business-partners.51.68.114.44.nip.io"}
+	]'
+
+# Verificación:	
+	kubectl get ingress -n portal | grep bpdm
+		portal-bpdm-gate           nginx   business-partners.51.68.114.44.nip.io   51.68.114.44   80      23h
+		portal-bpdm-orchestrator   nginx   business-partners.51.68.114.44.nip.io   51.68.114.44   80      23h
+		portal-bpdm-pool           nginx   business-partners.51.68.114.44.nip.io   51.68.114.44  
