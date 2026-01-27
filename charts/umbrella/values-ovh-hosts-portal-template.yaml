@@ -183,6 +183,14 @@ pgadmin4:
 # NOTE: Use internal cluster URLs for inter-service communication
 # External URLs via Ingress are only for browser/external API access
 bpdm-gate:
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "business-partners.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        paths:
+          - path: /gate
+            pathType: Prefix
   applicationConfig:
     bpdm:
       security:
@@ -193,12 +201,30 @@ bpdm-gate:
         baseUrl: "http://portal-bpdm-orchestrator:80"
 
 bpdm-pool:
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "business-partners.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        paths:
+          - path: /pool
+            pathType: Prefix
   applicationConfig:
     bpdm:
       security:
         authServerUrl: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
+
+bpdm-orchestrator:
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "business-partners.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        paths:
+          - path: /orchestrator
+            pathType: Prefix
 
 bpdm-cleaning-service-dummy:
   applicationConfig:
