@@ -37,7 +37,7 @@ resource "ovh_cloud_project_kube_nodepool" "node_pool" {
   service_name  = var.ovh_service_name
   kube_id       = ovh_cloud_project_kube.my_kube_cluster.id
   name          = "tractus-x-umbrella"  # Nombre del pool
-  flavor_name   = "b2-7"     # Tipo de nodo B2-7 (Propósito General)
+  flavor_name   = "b3-16"     # Tipo de nodo B3-16 (Nueva Generación - Mejor rendimiento)
   desired_nodes = 3      # 3 nodos para el portal
   max_nodes     = 3
   min_nodes     = 3
