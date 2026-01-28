@@ -4256,7 +4256,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://partners-gate.tx.test/*"
+        "http://partners-gate.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [
         "+"
@@ -4323,7 +4323,7 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://portal.tx.test/*"
+        "http://portal.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [
         "+"
@@ -4787,7 +4787,7 @@
       "clientId": "Cl2-CX-Portal",
       "name": "",
       "description": "",
-      "rootUrl": "http://portal.tx.test/home",
+      "rootUrl": "http://portal.51.68.114.44.nip.io/home",
       "adminUrl": "",
       "baseUrl": "",
       "surrogateAuthRequired": false,
@@ -4795,7 +4795,7 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://portal.tx.test/*"
+        "http://portal.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [
         "+"
@@ -4891,7 +4891,7 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://portal.tx.test/*"
+        "http://portal.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [
         "+"
@@ -4987,7 +4987,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://managed-identity-wallets.tx.test/*"
+        "http://managed-identity-wallets.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -5096,7 +5096,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "http://partners-pool.tx.test/*"
+        "http://partners-pool.51.68.114.44.nip.io/*"
       ],
       "webOrigins": [
         "+"
@@ -10266,11 +10266,11 @@
         "hideOnLoginPage": "false",
         "validateSignature": "true",
         "clientId": "central-idp",
-        "tokenUrl": "http://sharedidp.tx.test/auth/realms/CX-Operator/protocol/openid-connect/token",
-        "jwksUrl": "http://sharedidp.tx.test/auth/realms/CX-Operator/protocol/openid-connect/certs",
-        "authorizationUrl": "http://sharedidp.tx.test/auth/realms/CX-Operator/protocol/openid-connect/auth",
+        "tokenUrl": "http://sharedidp.51.68.114.44.nip.io/auth/realms/CX-Operator/protocol/openid-connect/token",
+        "jwksUrl": "http://sharedidp.51.68.114.44.nip.io/auth/realms/CX-Operator/protocol/openid-connect/certs",
+        "authorizationUrl": "http://sharedidp.51.68.114.44.nip.io/auth/realms/CX-Operator/protocol/openid-connect/auth",
         "clientAuthMethod": "private_key_jwt",
-        "logoutUrl": "http://sharedidp.tx.test/auth/realms/CX-Operator/protocol/openid-connect/logout",
+        "logoutUrl": "http://sharedidp.51.68.114.44.nip.io/auth/realms/CX-Operator/protocol/openid-connect/logout",
         "clientAssertionSigningAlg": "RS256",
         "syncMode": "FORCE",
         "useJwksUrl": "true"
