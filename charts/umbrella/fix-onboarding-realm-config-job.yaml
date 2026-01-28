@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fix-onboarding-realm-config
+  namespace: portal
+spec:
+  template:
+    spec:
+      containers:
+      - name: fix-realm-config
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "=========================================="
+            echo "Fixing Onboarding Realm Configuration"
+            echo "=========================================="
+            
+            echo ""
+            echo "=== Fixing redirect_uris for idpX realms ==="
+            export PGPASSWORD="${SHARED_PASSWORD}"
+            
+            # Process each idpX realm
+            for realm_name in $(psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -t -c "SELECT name FROM realm WHERE name ~ '^idp[0-9]+\$' ORDER BY name;"); do
+                echo "Processing realm: $realm_name"
+                
+                # Get client UUID (trim whitespace)
+                client_uuid=$(psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -t -c "SELECT c.id FROM realm r JOIN client c ON c.realm_id = r.id WHERE r.name = '$realm_name' AND c.client_id = 'central-idp';" | tr -d '[:space:]')
+                
+                if [ -n "$client_uuid" ]; then
+                    # Delete old redirect_uris
+                    psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "DELETE FROM redirect_uris WHERE client_id = '$client_uuid';"
+                    
+                    # Insert correct redirect_uri
+                    new_uri="http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/broker/$realm_name/endpoint/*"
+                    psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "INSERT INTO redirect_uris (client_id, value) VALUES ('$client_uuid', '$new_uri');"
+                    
+                    echo "  ✓ Updated redirect_uri to: $new_uri"
+                else
+                    echo "  ⚠ Client central-idp not found in realm $realm_name"
+                fi
+            done
+            
+            echo ""
+            echo "Results:"
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "SELECT r.name as realm, c.client_id, ru.value as redirect_uri FROM realm r JOIN client c ON c.realm_id = r.id LEFT JOIN redirect_uris ru ON ru.client_id = c.id WHERE r.name ~ '^idp[0-9]+\$' AND c.client_id = 'central-idp' ORDER BY r.name;"
+            
+            echo ""
+            echo "=== Fixing SSL requirement for idpX realms ==="
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "UPDATE realm SET ssl_required = 'NONE' WHERE name ~ '^idp[0-9]+\$';"
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp -c "SELECT name, ssl_required FROM realm WHERE name ~ '^idp[0-9]+\$' ORDER BY name;"
+            
+            echo ""
+            echo "=========================================="
+            echo "Configuration fixed successfully!"
+            echo "Restart Keycloak pods to apply changes:"
+            echo "  kubectl delete pod -n portal -l app.kubernetes.io/name=sharedidp"
+            echo "=========================================="
+        env:
+        - name: SHARED_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: portal-sharedidp-postgresql
+              key: password
+      restartPolicy: Never
+  backoffLimit: 3

@@ -31,7 +31,8 @@ spec:
             psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp <<EOF
             UPDATE realm SET ssl_required = 'NONE' WHERE name = 'master';
             UPDATE realm SET ssl_required = 'NONE' WHERE name = 'CX-Operator';
-            SELECT name, ssl_required FROM realm WHERE name IN ('master', 'CX-Operator');
+            UPDATE realm SET ssl_required = 'NONE' WHERE name = 'TestCompany1';
+            SELECT name, ssl_required FROM realm WHERE name IN ('master', 'CX-Operator', 'TestCompany1');
             EOF
             
             echo ""

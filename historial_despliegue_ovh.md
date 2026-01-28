@@ -700,6 +700,79 @@ kubectl delete namespace ingress-nginx
 
 ---
 
+## Problema Conocido: BPDM Ingress Hosts
+
+### Descripción del Problema
+**Fecha detectada**: 28 de Enero de 2026
+
+Durante el onboarding de TestCompany1, se descubrió que los ingress de BPDM no aplican correctamente los hosts configurados en `values-ovh-hosts-portal.yaml` durante el despliegue con Helm.
+
+**Síntoma**: 
+- Portal intenta llamar a: `http://business-partners.51.68.114.44.nip.io`
+- Pero los ingress tienen: `business-partners.tx.test`
+- Resultado: 404 errors en llamadas BPDM, fallo en asignación de BPN durante onboarding
+
+**Impacto**:
+- Bloquea el proceso de onboarding
+- La aplicación queda en estado SUBMITTED sin poder avanzar a CONFIRMED
+- Error: "BusinessPartnerNumber must be set"
+
+### Causa Raíz
+Los subchart de BPDM (bpdm-gate, bpdm-pool, bpdm-orchestrator) no sobrescriben correctamente el host de los ingress cuando se usa `values-ovh-hosts-portal.yaml`. Los valores del chart por defecto (`tx.test`) prevalecen sobre la configuración customizada.
+
+### Solución Implementada
+
+**Script de corrección manual**: `charts/umbrella/fix-bpdm-hosts.sh`
+
+```bash
+cd charts/umbrella
+./fix-bpdm-hosts.sh
+```
+
+El script realiza:
+1. Patch de `portal-bpdm-gate` ingress host
+2. Patch de `portal-bpdm-pool` ingress host  
+3. Patch de `portal-bpdm-orchestrator` ingress host
+4. Verificación de cambios aplicados
+
+**Ejecución requerida**: Después de cada `helm upgrade` del portal
+
+### Recomendación para Futuros Despliegues
+
+**IMPORTANTE**: Incluir en el procedimiento estándar de despliegue:
+
+```bash
+# 1. Desplegar/actualizar portal
+helm upgrade --install portal . \
+  -f values-ovh-hosts-portal.yaml \
+  -f values-adopter-portal-for-onboarding.yaml \
+  -n portal
+
+# 2. OBLIGATORIO: Corregir ingress de BPDM
+cd charts/umbrella
+./fix-bpdm-hosts.sh
+
+# 3. Reiniciar portal-backend para aplicar cambios
+kubectl delete pod -n portal -l app.kubernetes.io/name=portal-backend
+```
+
+### Verificación
+
+Comprobar que BPDM responde correctamente:
+```bash
+curl http://business-partners.51.68.114.44.nip.io/gate/api/catena/input/business-partners
+# Debe devolver: 401 (sin autenticación) o 200 (con token)
+# NO debe devolver: 404
+```
+
+### Investigación Pendiente
+
+- [ ] Verificar estructura de valores en subcharts de BPDM
+- [ ] Comprobar si existe override correcto para `ingress.hosts[].host`
+- [ ] Reportar issue al repositorio upstream si se confirma bug en chart
+
+---
+
 ## Referencias
 
 ### Documentación Oficial
