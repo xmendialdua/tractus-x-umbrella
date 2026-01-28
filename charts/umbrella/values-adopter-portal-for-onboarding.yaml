@@ -69,7 +69,7 @@ bpdm:
   enabled: true  # ✅ FASE 1: Habilitado
 
 bdrs-server-memory:
-  enabled: false
+  enabled: true  # ✅ Necesario para resolver BPN→DID en EDCs
 
 # ============================================================================
 # FASES POSTERIORES (Temporalmente deshabilitados)
@@ -77,26 +77,26 @@ bdrs-server-memory:
 
 # FASE 2: Habilitar después de verificar BPDM
 selfdescription:
-  enabled: false  # ❌ FASE 4: Deshabilitar por ahora
+  enabled: true  # ✅ FASE 2: Habilitado para self-description
 
 # FASE 2: Habilitar para ver emails de invitación
 smtp4dev:
   enabled: true  # ✅ FASE 2: Habilitado para onboarding por UI
 
-# NO NECESARIOS para onboarding básico
+# Componentes para compartición de datos
 bpndiscovery:
-  enabled: false  # ❌ Solo necesario para EDCs
+  enabled: false  # ❌ TEMPORAL: Problema con ingress regex path
 
 discoveryfinder:
-  enabled: false  # ❌ Solo necesario para EDCs
+  enabled: false  # ❌ TEMPORAL: Problema con ingress regex path
 
 # FASE 3: Habilitar después de BPDM + SMTP
 ssi-credential-issuer:
-  enabled: false  # ❌ FASE 3: Deshabilitar por ahora (requiere PostgreSQL adicional)
+  enabled: true  # ✅ FASE 3: Habilitado para emisión de credenciales verificables
 
 # FASE 4: Habilitar al final
 identity-and-trust-bundle:
-  enabled: false  # ❌ FASE 4: Deshabilitar por ahora
+  enabled: true  # ✅ FASE 4: Habilitado para DIM Wallet y gestión de identidades
   # -- uncomment the following for persistance
   # postgresql:
   #   primary:

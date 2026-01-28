@@ -241,3 +241,136 @@ smtp4dev:
         paths:
           - path: /
             pathType: Prefix
+
+# ============================================================================
+# SSI & Identity Components
+# ============================================================================
+
+# Self-Description Factory (sdfactory)
+selfdescription:
+  sdfactory:
+    secret:
+      jwkSetUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/certs"
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "sdfactory.51.68.114.44.nip.io"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+
+# SSI Credential Issuer
+ssi-credential-issuer:
+  portalBackendAddress: "http://portal-backend.51.68.114.44.nip.io"
+  walletAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+  walletTokenAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/oauth/token"
+  service:
+    credential:
+      issuerDid: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
+      statusListUrl: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/status-list/BPNL00000003CRHK/8a6c7486-1e1f-4555-bdd2-1a178182651e"
+  centralidp:
+    address: "http://centralidp.51.68.114.44.nip.io"
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/use-regex: "true"
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
+    hosts:
+      - host: "ssi-credential-issuer.51.68.114.44.nip.io"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+            backend:
+              port: 8080
+
+# DIM Wallet Stub (part of identity-and-trust-bundle)
+identity-and-trust-bundle:
+  ssi-dim-wallet-stub:
+    wallet:
+      host: "ssi-dim-wallet-stub.51.68.114.44.nip.io"
+      didHost: "ssi-dim-wallet-stub.51.68.114.44.nip.io"
+      stubUrl: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+      portal:
+        host: "http://portal-backend.51.68.114.44.nip.io"
+      keycloak:
+        authServerUrl: "http://centralidp.51.68.114.44.nip.io/auth"
+      ingress:
+        enabled: true
+        className: nginx
+
+# ============================================================================
+# Discovery Services
+# ============================================================================
+
+# BDRS (BPN-DID Resolution Service)
+bdrs-server-memory:
+  seeding:
+    bpnList:
+      - bpn: "BPNL00000003CRHK"
+        did: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
+  server:
+    trustedIssuers:
+      - did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK
+    env:
+      EDC_IAM_DID_WEB_USE_HTTPS: false
+    ingresses:
+      - enabled: true
+        hostname: "bdrs-server.51.68.114.44.nip.io"
+        endpoints:
+          - directory
+          - management
+        className: "nginx"
+        tls:
+          enabled: false
+
+# BPN Discovery
+bpndiscovery:
+  bpndiscovery:
+    host: "semantics.51.68.114.44.nip.io"
+    ingress:
+      enabled: true
+      tls: false
+      urlPrefix: "/bpndiscovery"
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+        nginx.ingress.kubernetes.io/use-regex: "true"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+        nginx.ingress.kubernetes.io/x-forwarded-prefix: "/bpndiscovery"
+    idp:
+      issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
+    discoveryfinderClient:
+      baseUrl: "semantics.51.68.114.44.nip.io/discoveryfinder"
+      provider:
+        tokenUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/token"
+
+# Discovery Finder
+discoveryfinder:
+  discoveryfinder:
+    host: "semantics.51.68.114.44.nip.io"
+    properties:
+      discoveryfinder:
+        initialEndpoints:
+          - type: bpn
+            endpointAddress: "http://portal-backend.51.68.114.44.nip.io/api/administration/Connectors/discovery"
+            description: Service to discover connector endpoints based on bpns
+            documentation: "http://portal-backend.51.68.114.44.nip.io/api/administration/swagger/index.html"
+    idp:
+      issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
+    ingress:
+      enabled: true
+      tls: false
+      urlPrefix: "/discoveryfinder"
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+        nginx.ingress.kubernetes.io/use-regex: "true"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+        nginx.ingress.kubernetes.io/x-forwarded-prefix: "/discoveryfinder"
+

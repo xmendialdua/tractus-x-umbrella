@@ -19,3 +19,10 @@ kubeconfig-cul9qm.yml
 terraform.tfstate
 terraform-ovh/tfplan
 .terraform/
+terraform-ovh/main.tf.backup
+charts/umbrella/values-ovh-realms-portal-template.yaml
+charts/umbrella/values-ovh-realms-portal.yaml
+init-container/iam/centralidp/CX-Central-realm_MAssembly.json
+init-container/iam/centralidp/CX-Central-users-0_MAssembly.json
+charts/umbrella/values-orbea-persistence.yaml
+charts/umbrella/values-orbea-portal.yaml
