@@ -231,3 +231,13 @@ bpdm-cleaning-service-dummy:
     bpdm:
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
+
+smtp4dev:
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "smtp4dev.51.68.114.44.nip.io"
+        paths:
+          - path: /
+            pathType: Prefix

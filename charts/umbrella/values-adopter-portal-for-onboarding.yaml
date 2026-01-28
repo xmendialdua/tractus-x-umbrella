@@ -81,7 +81,7 @@ selfdescription:
 
 # FASE 2: Habilitar para ver emails de invitación
 smtp4dev:
-  enabled: false  # ❌ FASE 2: Deshabilitar por ahora
+  enabled: true  # ✅ FASE 2: Habilitado para onboarding por UI
 
 # NO NECESARIOS para onboarding básico
 bpndiscovery:
