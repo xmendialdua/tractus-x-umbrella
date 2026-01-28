@@ -98,10 +98,11 @@ portal:
                 port: 8080
 
 centralidp:
-  initContainer:
-    image:
-      repository: "xmendialdua/catena-x-init"
-      tag: "v1"
+  realmSeeding:
+    initContainer:
+      image:
+        name: "docker.io/xmendialdua/catena-x-init:v1"
+        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
@@ -138,10 +139,11 @@ centralidp:
         value: "/auth/"
 
 sharedidp:
-  initContainer:
-    image:
-      repository: "xmendialdua/catena-x-init"
-      tag: "v1"
+  realmSeeding:
+    initContainer:
+      image:
+        name: "docker.io/xmendialdua/catena-x-init:v1"
+        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
