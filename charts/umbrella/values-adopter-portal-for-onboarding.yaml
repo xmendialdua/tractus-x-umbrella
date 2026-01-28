@@ -85,10 +85,10 @@ smtp4dev:
 
 # Componentes para compartición de datos
 bpndiscovery:
-  enabled: false  # ❌ TEMPORAL: Problema con ingress regex path
+  enabled: true  # ✅ Necesario para descubrimiento de BPNs en EDCs
 
 discoveryfinder:
-  enabled: false  # ❌ TEMPORAL: Problema con ingress regex path
+  enabled: true  # ✅ Necesario para descubrimiento de EDCs en el dataspace
 
 # FASE 3: Habilitar después de BPDM + SMTP
 ssi-credential-issuer:

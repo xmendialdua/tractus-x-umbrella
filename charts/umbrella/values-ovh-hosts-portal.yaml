@@ -332,16 +332,7 @@ bpndiscovery:
   bpndiscovery:
     host: "semantics.51.68.114.44.nip.io"
     ingress:
-      enabled: true
-      tls: false
-      urlPrefix: "/bpndiscovery"
-      className: "nginx"
-      annotations:
-        nginx.ingress.kubernetes.io/rewrite-target: "/$2"
-        nginx.ingress.kubernetes.io/use-regex: "true"
-        nginx.ingress.kubernetes.io/enable-cors: "true"
-        nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-        nginx.ingress.kubernetes.io/x-forwarded-prefix: "/bpndiscovery"
+      enabled: false  # Deshabilitado - se crea ingress manual
     idp:
       issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
     discoveryfinderClient:
@@ -363,14 +354,5 @@ discoveryfinder:
     idp:
       issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
     ingress:
-      enabled: true
-      tls: false
-      urlPrefix: "/discoveryfinder"
-      className: "nginx"
-      annotations:
-        nginx.ingress.kubernetes.io/rewrite-target: "/$2"
-        nginx.ingress.kubernetes.io/use-regex: "true"
-        nginx.ingress.kubernetes.io/enable-cors: "true"
-        nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-        nginx.ingress.kubernetes.io/x-forwarded-prefix: "/discoveryfinder"
+      enabled: false  # Deshabilitado - se crea ingress manual
 
