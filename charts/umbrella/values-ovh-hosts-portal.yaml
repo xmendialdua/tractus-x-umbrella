@@ -328,19 +328,23 @@ bdrs-server-memory:
           enabled: false
 
 # BPN Discovery
+# NOTA: El subchart no permite configurar pathType: ImplementationSpecific desde values
+# Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
 bpndiscovery:
   bpndiscovery:
     host: "semantics.51.68.114.44.nip.io"
     ingress:
-      enabled: false  # Deshabilitado - se crea ingress manual
+      enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
     idp:
       issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
     discoveryfinderClient:
-      baseUrl: "semantics.51.68.114.44.nip.io/discoveryfinder"
+      baseUrl: "http://semantics.51.68.114.44.nip.io/discoveryfinder"
       provider:
         tokenUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/token"
 
 # Discovery Finder
+# NOTA: El subchart no permite configurar pathType: ImplementationSpecific desde values
+# Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
 discoveryfinder:
   discoveryfinder:
     host: "semantics.51.68.114.44.nip.io"
@@ -354,5 +358,63 @@ discoveryfinder:
     idp:
       issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
     ingress:
-      enabled: false  # Deshabilitado - se crea ingress manual
+      enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
+
+# ============================================================================
+# Manual Ingress Configuration (required for Discovery Services)
+# ============================================================================
+# Los subcharts de bpndiscovery y discoveryfinder usan pathType: Prefix hardcodeado,
+# lo cual es incompatible con rutas regex como /bpndiscovery(/|$)(.*).
+# 
+# Para habilitar acceso externo, aplicar manualmente después del helm upgrade:
+#
+#   kubectl apply -f - <<EOF
+#   apiVersion: networking.k8s.io/v1
+#   kind: Ingress
+#   metadata:
+#     name: portal-bpndiscovery
+#     namespace: portal
+#     annotations:
+#       nginx.ingress.kubernetes.io/use-regex: "true"
+#       nginx.ingress.kubernetes.io/rewrite-target: /\$2
+#   spec:
+#     ingressClassName: nginx
+#     rules:
+#     - host: semantics.51.68.114.44.nip.io
+#       http:
+#         paths:
+#         - path: /bpndiscovery(/|$)(.*)
+#           pathType: ImplementationSpecific
+#           backend:
+#             service:
+#               name: portal-bpndiscovery
+#               port:
+#                 number: 8080
+#   ---
+#   apiVersion: networking.k8s.io/v1
+#   kind: Ingress
+#   metadata:
+#     name: portal-discoveryfinder
+#     namespace: portal
+#     annotations:
+#       nginx.ingress.kubernetes.io/use-regex: "true"
+#       nginx.ingress.kubernetes.io/rewrite-target: /\$2
+#   spec:
+#     ingressClassName: nginx
+#     rules:
+#     - host: semantics.51.68.114.44.nip.io
+#       http:
+#         paths:
+#         - path: /discoveryfinder(/|$)(.*)
+#           pathType: ImplementationSpecific
+#           backend:
+#             service:
+#               name: portal-discoveryfinder
+#               port:
+#                 number: 8080
+#   EOF
+#
+# Verificar acceso:
+#   curl http://semantics.51.68.114.44.nip.io/bpndiscovery/swagger-ui/index.html
+#   curl http://semantics.51.68.114.44.nip.io/discoveryfinder/swagger-ui/index.html
 

@@ -86,9 +86,25 @@ smtp4dev:
 # Componentes para compartición de datos
 bpndiscovery:
   enabled: true  # ✅ Necesario para descubrimiento de BPNs en EDCs
+  enablePostgres: true
+  postgresql:
+    ## TEMPORALY UNTIL NEW BPNDISCOVERY UPDATE - usar mismo patrón que portal/bpdm/issuer
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/postgresql
+      tag: "15-debian-11"
+    ## UNTIL HERE
 
 discoveryfinder:
   enabled: true  # ✅ Necesario para descubrimiento de EDCs en el dataspace
+  enablePostgres: true
+  postgresql:
+    ## TEMPORALY UNTIL NEW DISCOVERYFINDER UPDATE - usar mismo patrón que portal/bpdm/issuer
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/postgresql
+      tag: "15-debian-11"
+    ## UNTIL HERE
 
 # FASE 3: Habilitar después de BPDM + SMTP
 ssi-credential-issuer:
