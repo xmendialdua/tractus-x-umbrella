@@ -144,6 +144,9 @@ sharedidp:
       image:
         name: "docker.io/xmendialdua/catena-x-init:v1"
         pullPolicy: "IfNotPresent"
+    realms:
+      cxOperator:
+        centralidp: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
   keycloak:
     ingress:
       enabled: true
