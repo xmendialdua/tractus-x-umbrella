@@ -3,36 +3,36 @@
 # This template merges values-ovh-hosts.yaml and values-ovh-custom-domain.yaml
 
 global:
-  domainSuffix: "51.68.114.44.nip.io"
+  domainSuffix: "51.178.94.25.nip.io"
 
 portal:
-  portalAddress: "http://portal.51.68.114.44.nip.io"
-  portalBackendAddress: "http://portal-backend.51.68.114.44.nip.io"
+  portalAddress: "http://portal.51.178.94.25.nip.io"
+  portalBackendAddress: "http://portal-backend.51.178.94.25.nip.io"
   centralidp:
-    address: "http://centralidp.51.68.114.44.nip.io"
-  sharedidpAddress: "http://sharedidp.51.68.114.44.nip.io"
-  semanticsAddress: "http://semantics.51.68.114.44.nip.io"
+    address: "http://centralidp.51.178.94.25.nip.io"
+  sharedidpAddress: "http://sharedidp.51.178.94.25.nip.io"
+  semanticsAddress: "http://semantics.51.178.94.25.nip.io"
   bpdm:
-    poolAddress: "http://business-partners.51.68.114.44.nip.io"
-    portalGateAddress: "http://business-partners.51.68.114.44.nip.io"
-  custodianAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+    poolAddress: "http://business-partners.51.178.94.25.nip.io"
+    portalGateAddress: "http://business-partners.51.178.94.25.nip.io"
+  custodianAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
   dimWrapper:
-    baseAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
-    tokenAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/oauth/token"
-  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/api/sts"
-  sdfactoryAddress: "http://sdfactory.51.68.114.44.nip.io"
+    baseAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
+    tokenAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/oauth/token"
+  decentralIdentityManagementAuthAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api/sts"
+  sdfactoryAddress: "http://sdfactory.51.178.94.25.nip.io"
   clearinghouse:
     default:
-      baseAddress: "http://validation.51.68.114.44.nip.io"
-      tokenAddress: "http://someiam.51.68.114.44.nip.io/realms/example/protocol/openid-connect/token"
-  issuerComponentAddress: "http://ssi-credential-issuer.51.68.114.44.nip.io"
+      baseAddress: "http://validation.51.178.94.25.nip.io"
+      tokenAddress: "http://someiam.51.178.94.25.nip.io/realms/example/protocol/openid-connect/token"
+  issuerComponentAddress: "http://ssi-credential-issuer.51.178.94.25.nip.io"
   frontend:
     ingress:
       className: "nginx"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.178.94.25.nip.io"
       hosts:
-        - host: "portal.51.68.114.44.nip.io"
+        - host: "portal.51.178.94.25.nip.io"
           paths:
             - path: "/(.*)"
               pathType: "ImplementationSpecific"
@@ -51,10 +51,10 @@ portal:
                 port: 8080
   backend:
     administration:
-      issuerdid: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
+      issuerdid: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"
     processesworker:
       dim:
-        baseAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+        baseAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
     ingress:
       enabled: true
       className: "nginx"
@@ -62,9 +62,9 @@ portal:
         nginx.ingress.kubernetes.io/use-regex: "true"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/proxy-body-size: "8m"
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.51.68.114.44.nip.io"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.51.178.94.25.nip.io"
       hosts:
-        - host: "portal-backend.51.68.114.44.nip.io"
+        - host: "portal-backend.51.178.94.25.nip.io"
           paths:
             - path: "/api/registration"
               pathType: "Prefix"
@@ -98,18 +98,13 @@ portal:
                 port: 8080
 
 centralidp:
-  realmSeeding:
-    initContainer:
-      image:
-        name: "docker.io/xmendialdua/catena-x-init:v1"
-        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
       ingressClassName: "nginx"
-      hostname: "centralidp.51.68.114.44.nip.io"
+      hostname: "centralidp.51.178.94.25.nip.io"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.178.94.25.nip.io"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/affinity: "cookie"
         nginx.ingress.kubernetes.io/session-cookie-name: "route"
@@ -118,7 +113,7 @@ centralidp:
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
-        value: "http://centralidp.51.68.114.44.nip.io/auth/"
+        value: "http://centralidp.51.178.94.25.nip.io/auth/"
       - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
         value: "true"
       - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
@@ -134,23 +129,18 @@ centralidp:
       - name: KC_PROXY
         value: "edge"
       - name: KC_HOSTNAME
-        value: "centralidp.51.68.114.44.nip.io"
+        value: "centralidp.51.178.94.25.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
 
 sharedidp:
-  realmSeeding:
-    initContainer:
-      image:
-        name: "docker.io/xmendialdua/catena-x-init:v1"
-        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
       ingressClassName: "nginx"
-      hostname: "sharedidp.51.68.114.44.nip.io"
+      hostname: "sharedidp.51.178.94.25.nip.io"
       annotations:
-        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.178.94.25.nip.io"
         nginx.ingress.kubernetes.io/enable-cors: "true"
         nginx.ingress.kubernetes.io/affinity: "cookie"
         nginx.ingress.kubernetes.io/session-cookie-name: "route"
@@ -159,7 +149,7 @@ sharedidp:
       tls: false
     extraEnvVars:
       - name: KEYCLOAK_FRONTEND_URL
-        value: "http://sharedidp.51.68.114.44.nip.io/auth/"
+        value: "http://sharedidp.51.178.94.25.nip.io/auth/"
       - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
         value: "true"
       - name: KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_SHOULD_ATTACH_ROUTE
@@ -175,7 +165,7 @@ sharedidp:
       - name: KC_PROXY
         value: "edge"
       - name: KC_HOSTNAME
-        value: "sharedidp.51.68.114.44.nip.io"
+        value: "sharedidp.51.178.94.25.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
 
@@ -184,7 +174,7 @@ pgadmin4:
     enabled: true
     ingressClassName: nginx
     hosts:
-      - host: pgadmin4.51.68.114.44.nip.io
+      - host: pgadmin4.51.178.94.25.nip.io
         paths:
           - path: /
             pathType: Prefix
@@ -197,14 +187,14 @@ bpdm-gate:
     enabled: true
     className: "nginx"
     hosts:
-      - host: "business-partners.51.68.114.44.nip.io"
+      - host: "business-partners.51.178.94.25.nip.io"
         paths:
           - path: /gate
             pathType: Prefix
   applicationConfig:
     bpdm:
       security:
-        authServerUrl: "http://centralidp.51.68.114.44.nip.io/auth"
+        authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
       pool:
         baseUrl: "http://portal-bpdm-pool:80"
       orchestrator:
@@ -215,14 +205,14 @@ bpdm-pool:
     enabled: true
     className: "nginx"
     hosts:
-      - host: "business-partners.51.68.114.44.nip.io"
+      - host: "business-partners.51.178.94.25.nip.io"
         paths:
           - path: /pool
             pathType: Prefix
   applicationConfig:
     bpdm:
       security:
-        authServerUrl: "http://centralidp.51.68.114.44.nip.io/auth"
+        authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
 
@@ -231,7 +221,7 @@ bpdm-orchestrator:
     enabled: true
     className: "nginx"
     hosts:
-      - host: "business-partners.51.68.114.44.nip.io"
+      - host: "business-partners.51.178.94.25.nip.io"
         paths:
           - path: /orchestrator
             pathType: Prefix
@@ -247,7 +237,7 @@ smtp4dev:
     enabled: true
     className: "nginx"
     hosts:
-      - host: "smtp4dev.51.68.114.44.nip.io"
+      - host: "smtp4dev.51.178.94.25.nip.io"
         paths:
           - path: /
             pathType: Prefix
@@ -260,27 +250,27 @@ smtp4dev:
 selfdescription:
   sdfactory:
     secret:
-      jwkSetUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/certs"
+      jwkSetUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central/protocol/openid-connect/certs"
   ingress:
     enabled: true
     className: "nginx"
     hosts:
-      - host: "sdfactory.51.68.114.44.nip.io"
+      - host: "sdfactory.51.178.94.25.nip.io"
         paths:
           - path: "/"
             pathType: "Prefix"
 
 # SSI Credential Issuer
 ssi-credential-issuer:
-  portalBackendAddress: "http://portal-backend.51.68.114.44.nip.io"
-  walletAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
-  walletTokenAddress: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/oauth/token"
+  portalBackendAddress: "http://portal-backend.51.178.94.25.nip.io"
+  walletAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
+  walletTokenAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/oauth/token"
   service:
     credential:
-      issuerDid: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
-      statusListUrl: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io/status-list/BPNL00000003CRHK/8a6c7486-1e1f-4555-bdd2-1a178182651e"
+      issuerDid: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"
+      statusListUrl: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/status-list/BPNL00000003CRHK/8a6c7486-1e1f-4555-bdd2-1a178182651e"
   centralidp:
-    address: "http://centralidp.51.68.114.44.nip.io"
+    address: "http://centralidp.51.178.94.25.nip.io"
   ingress:
     enabled: true
     className: "nginx"
@@ -288,9 +278,9 @@ ssi-credential-issuer:
       nginx.ingress.kubernetes.io/use-regex: "true"
       nginx.ingress.kubernetes.io/enable-cors: "true"
       nginx.ingress.kubernetes.io/proxy-body-size: "8m"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.68.114.44.nip.io"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.51.178.94.25.nip.io"
     hosts:
-      - host: "ssi-credential-issuer.51.68.114.44.nip.io"
+      - host: "ssi-credential-issuer.51.178.94.25.nip.io"
         paths:
           - path: "/"
             pathType: "Prefix"
@@ -301,13 +291,13 @@ ssi-credential-issuer:
 identity-and-trust-bundle:
   ssi-dim-wallet-stub:
     wallet:
-      host: "ssi-dim-wallet-stub.51.68.114.44.nip.io"
-      didHost: "ssi-dim-wallet-stub.51.68.114.44.nip.io"
-      stubUrl: "http://ssi-dim-wallet-stub.51.68.114.44.nip.io"
+      host: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
+      didHost: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
+      stubUrl: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
       portal:
-        host: "http://portal-backend.51.68.114.44.nip.io"
+        host: "http://portal-backend.51.178.94.25.nip.io"
       keycloak:
-        authServerUrl: "http://centralidp.51.68.114.44.nip.io/auth"
+        authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
       ingress:
         enabled: true
         className: nginx
@@ -321,15 +311,15 @@ bdrs-server-memory:
   seeding:
     bpnList:
       - bpn: "BPNL00000003CRHK"
-        did: "did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"
   server:
     trustedIssuers:
-      - did:web:ssi-dim-wallet-stub.51.68.114.44.nip.io:BPNL00000003CRHK
+      - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
     env:
       EDC_IAM_DID_WEB_USE_HTTPS: false
     ingresses:
       - enabled: true
-        hostname: "bdrs-server.51.68.114.44.nip.io"
+        hostname: "bdrs-server.51.178.94.25.nip.io"
         endpoints:
           - directory
           - management
@@ -342,31 +332,31 @@ bdrs-server-memory:
 # Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
 bpndiscovery:
   bpndiscovery:
-    host: "semantics.51.68.114.44.nip.io"
+    host: "semantics.51.178.94.25.nip.io"
     ingress:
       enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
     idp:
-      issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
+      issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
     discoveryfinderClient:
-      baseUrl: "http://semantics.51.68.114.44.nip.io/discoveryfinder"
+      baseUrl: "http://semantics.51.178.94.25.nip.io/discoveryfinder"
       provider:
-        tokenUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central/protocol/openid-connect/token"
+        tokenUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central/protocol/openid-connect/token"
 
 # Discovery Finder
 # NOTA: El subchart no permite configurar pathType: ImplementationSpecific desde values
 # Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
 discoveryfinder:
   discoveryfinder:
-    host: "semantics.51.68.114.44.nip.io"
+    host: "semantics.51.178.94.25.nip.io"
     properties:
       discoveryfinder:
         initialEndpoints:
           - type: bpn
-            endpointAddress: "http://portal-backend.51.68.114.44.nip.io/api/administration/Connectors/discovery"
+            endpointAddress: "http://portal-backend.51.178.94.25.nip.io/api/administration/Connectors/discovery"
             description: Service to discover connector endpoints based on bpns
-            documentation: "http://portal-backend.51.68.114.44.nip.io/api/administration/swagger/index.html"
+            documentation: "http://portal-backend.51.178.94.25.nip.io/api/administration/swagger/index.html"
     idp:
-      issuerUri: "http://centralidp.51.68.114.44.nip.io/auth/realms/CX-Central"
+      issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
     ingress:
       enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
 
@@ -390,7 +380,7 @@ discoveryfinder:
 #   spec:
 #     ingressClassName: nginx
 #     rules:
-#     - host: semantics.51.68.114.44.nip.io
+#     - host: semantics.51.178.94.25.nip.io
 #       http:
 #         paths:
 #         - path: /bpndiscovery(/|$)(.*)
@@ -412,7 +402,7 @@ discoveryfinder:
 #   spec:
 #     ingressClassName: nginx
 #     rules:
-#     - host: semantics.51.68.114.44.nip.io
+#     - host: semantics.51.178.94.25.nip.io
 #       http:
 #         paths:
 #         - path: /discoveryfinder(/|$)(.*)
@@ -425,6 +415,6 @@ discoveryfinder:
 #   EOF
 #
 # Verificar acceso:
-#   curl http://semantics.51.68.114.44.nip.io/bpndiscovery/swagger-ui/index.html
-#   curl http://semantics.51.68.114.44.nip.io/discoveryfinder/swagger-ui/index.html
+#   curl http://semantics.51.178.94.25.nip.io/bpndiscovery/swagger-ui/index.html
+#   curl http://semantics.51.178.94.25.nip.io/discoveryfinder/swagger-ui/index.html
 
