@@ -102,6 +102,7 @@ centralidp:
     initContainer:
       image:
         name: "docker.io/xmendialdua/catena-x-init:v1"
+        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
@@ -142,6 +143,7 @@ sharedidp:
     initContainer:
       image:
         name: "docker.io/xmendialdua/catena-x-init:v1"
+        pullPolicy: "IfNotPresent"
   keycloak:
     ingress:
       enabled: true
@@ -249,3 +251,179 @@ smtp4dev:
         paths:
           - path: /
             pathType: Prefix
+
+# ============================================================================
+# SSI & Identity Components
+# ============================================================================
+
+# Self-Description Factory (sdfactory)
+selfdescription:
+  sdfactory:
+    secret:
+      jwkSetUri: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central/protocol/openid-connect/certs"
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "sdfactory.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+
+# SSI Credential Issuer
+ssi-credential-issuer:
+  portalBackendAddress: "http://portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+  walletAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+  walletTokenAddress: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/oauth/token"
+  service:
+    credential:
+      issuerDid: "did:web:ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}:BPNL00000003CRHK"
+      statusListUrl: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/status-list/BPNL00000003CRHK/8a6c7486-1e1f-4555-bdd2-1a178182651e"
+  centralidp:
+    address: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/use-regex: "true"
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "http://*.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    hosts:
+      - host: "ssi-credential-issuer.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+            backend:
+              port: 8080
+
+# DIM Wallet Stub (part of identity-and-trust-bundle)
+identity-and-trust-bundle:
+  ssi-dim-wallet-stub:
+    wallet:
+      host: "ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      didHost: "ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      stubUrl: "http://ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      portal:
+        host: "http://portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+      keycloak:
+        authServerUrl: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth"
+      ingress:
+        enabled: true
+        className: nginx
+
+# ============================================================================
+# Discovery Services
+# ============================================================================
+
+# BDRS (BPN-DID Resolution Service)
+bdrs-server-memory:
+  seeding:
+    bpnList:
+      - bpn: "BPNL00000003CRHK"
+        did: "did:web:ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}:BPNL00000003CRHK"
+  server:
+    trustedIssuers:
+      - did:web:ssi-dim-wallet-stub.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}:BPNL00000003CRHK
+    env:
+      EDC_IAM_DID_WEB_USE_HTTPS: false
+    ingresses:
+      - enabled: true
+        hostname: "bdrs-server.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+        endpoints:
+          - directory
+          - management
+        className: "nginx"
+        tls:
+          enabled: false
+
+# BPN Discovery
+# NOTA: El subchart no permite configurar pathType: ImplementationSpecific desde values
+# Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
+bpndiscovery:
+  bpndiscovery:
+    host: "semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    ingress:
+      enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
+    idp:
+      issuerUri: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central"
+    discoveryfinderClient:
+      baseUrl: "http://semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/discoveryfinder"
+      provider:
+        tokenUri: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central/protocol/openid-connect/token"
+
+# Discovery Finder
+# NOTA: El subchart no permite configurar pathType: ImplementationSpecific desde values
+# Por tanto, el ingress se gestiona manualmente. Ver sección "Manual Ingress Configuration" al final.
+discoveryfinder:
+  discoveryfinder:
+    host: "semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}"
+    properties:
+      discoveryfinder:
+        initialEndpoints:
+          - type: bpn
+            endpointAddress: "http://portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/api/administration/Connectors/discovery"
+            description: Service to discover connector endpoints based on bpns
+            documentation: "http://portal-backend.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/api/administration/swagger/index.html"
+    idp:
+      issuerUri: "http://centralidp.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/auth/realms/CX-Central"
+    ingress:
+      enabled: false  # Deshabilitado - el subchart solo soporta pathType: Prefix (incompatible con rutas regex)
+
+# ============================================================================
+# Manual Ingress Configuration (required for Discovery Services)
+# ============================================================================
+# Los subcharts de bpndiscovery y discoveryfinder usan pathType: Prefix hardcodeado,
+# lo cual es incompatible con rutas regex como /bpndiscovery(/|$)(.*).
+# 
+# Para habilitar acceso externo, aplicar manualmente después del helm upgrade:
+#
+#   kubectl apply -f - <<EOF
+#   apiVersion: networking.k8s.io/v1
+#   kind: Ingress
+#   metadata:
+#     name: portal-bpndiscovery
+#     namespace: portal
+#     annotations:
+#       nginx.ingress.kubernetes.io/use-regex: "true"
+#       nginx.ingress.kubernetes.io/rewrite-target: /\$2
+#   spec:
+#     ingressClassName: nginx
+#     rules:
+#     - host: semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}
+#       http:
+#         paths:
+#         - path: /bpndiscovery(/|$)(.*)
+#           pathType: ImplementationSpecific
+#           backend:
+#             service:
+#               name: portal-bpndiscovery
+#               port:
+#                 number: 8080
+#   ---
+#   apiVersion: networking.k8s.io/v1
+#   kind: Ingress
+#   metadata:
+#     name: portal-discoveryfinder
+#     namespace: portal
+#     annotations:
+#       nginx.ingress.kubernetes.io/use-regex: "true"
+#       nginx.ingress.kubernetes.io/rewrite-target: /\$2
+#   spec:
+#     ingressClassName: nginx
+#     rules:
+#     - host: semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}
+#       http:
+#         paths:
+#         - path: /discoveryfinder(/|$)(.*)
+#           pathType: ImplementationSpecific
+#           backend:
+#             service:
+#               name: portal-discoveryfinder
+#               port:
+#                 number: 8080
+#   EOF
+#
+# Verificar acceso:
+#   curl http://semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/bpndiscovery/swagger-ui/index.html
+#   curl http://semantics.{{LOAD_BALANCER_IP}}{{DNS_SUFFIX}}/discoveryfinder/swagger-ui/index.html
