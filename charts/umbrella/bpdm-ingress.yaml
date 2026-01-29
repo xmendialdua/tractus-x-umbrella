@@ -1,0 +1,74 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-bpdm-gate
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    nginx.ingress.kubernetes.io/cors-allow-origin: http://business-partners.51.178.94.25.nip.io
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: business-partners.51.178.94.25.nip.io
+    http:
+      paths:
+      - path: /gate(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-bpdm-gate
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-bpdm-orchestrator
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    nginx.ingress.kubernetes.io/cors-allow-origin: http://business-partners.51.178.94.25.nip.io
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: business-partners.51.178.94.25.nip.io
+    http:
+      paths:
+      - path: /orchestrator(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-bpdm-orchestrator
+            port:
+              number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-bpdm-pool
+  namespace: portal
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    nginx.ingress.kubernetes.io/cors-allow-origin: http://business-partners.51.178.94.25.nip.io
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: business-partners.51.178.94.25.nip.io
+    http:
+      paths:
+      - path: /pool(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: portal-bpdm-pool
+            port:
+              number: 80
