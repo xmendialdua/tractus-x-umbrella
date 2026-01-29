@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: smtp4dev.51.68.114.44.nip.io
+    - host: smtp4dev.51.178.94.25.nip.io
       http:
         paths:
           - path: /
