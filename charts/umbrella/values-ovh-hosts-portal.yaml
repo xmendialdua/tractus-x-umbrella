@@ -225,10 +225,16 @@ bpdm-orchestrator:
         paths:
           - path: /orchestrator
             pathType: Prefix
+  applicationConfig:
+    bpdm:
+      security:
+        authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
 
 bpdm-cleaning-service-dummy:
   applicationConfig:
     bpdm:
+      security:
+        authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
 
