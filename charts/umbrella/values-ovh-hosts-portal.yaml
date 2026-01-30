@@ -296,6 +296,7 @@ ssi-credential-issuer:
 # DIM Wallet Stub (part of identity-and-trust-bundle)
 identity-and-trust-bundle:
   ssi-dim-wallet-stub:
+    enabled: true  # ← CRÍTICO: Habilitar el subchart explícitamente
     wallet:
       host: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
       didHost: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
@@ -318,6 +319,10 @@ bdrs-server-memory:
     bpnList:
       - bpn: "BPNL00000003CRHK"
         did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"
+      - bpn: "BPNL000000000065"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL000000000065"
+      - bpn: "BPNL00000000015G"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"
   server:
     trustedIssuers:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
