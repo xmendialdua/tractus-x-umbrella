@@ -70,7 +70,7 @@ bpdm:
   enabled: true
   # ✅ Persistencia habilitada para BPDM PostgreSQL compartido
   # Los 3 servicios (pool, gate, orchestrator) usan el mismo PostgreSQL
-  bpdm-postgres:
+  postgres:
     primary:
       persistence:
         enabled: true

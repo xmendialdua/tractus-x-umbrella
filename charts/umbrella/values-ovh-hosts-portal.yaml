@@ -195,6 +195,7 @@ bpdm-gate:
     bpdm:
       security:
         authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
+        issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
       pool:
         baseUrl: "http://portal-bpdm-pool:80"
       orchestrator:
@@ -213,6 +214,7 @@ bpdm-pool:
     bpdm:
       security:
         authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
+        issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
 
@@ -229,12 +231,14 @@ bpdm-orchestrator:
     bpdm:
       security:
         authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
+        issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
 
 bpdm-cleaning-service-dummy:
   applicationConfig:
     bpdm:
       security:
         authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
+        issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
 
