@@ -13,8 +13,8 @@ portal:
   sharedidpAddress: "http://sharedidp.51.178.94.25.nip.io"
   semanticsAddress: "http://semantics.51.178.94.25.nip.io"
   bpdm:
-    poolAddress: "http://business-partners.51.178.94.25.nip.io"
-    portalGateAddress: "http://business-partners.51.178.94.25.nip.io"
+    poolAddress: "http://portal-bpdm-pool:80"
+    portalGateAddress: "http://portal-bpdm-gate:80"
   custodianAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
   dimWrapper:
     baseAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
@@ -52,6 +52,15 @@ portal:
   backend:
     administration:
       issuerdid: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"
+    provisioning:
+      sharedRealm:
+        smtpServer:
+          host: "smtp4dev"
+          port: "25"
+          user: ""
+          password: ""
+          from: "portal@catena-x.net"
+          replyTo: "portal@catena-x.net"
     processesworker:
       dim:
         baseAddress: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
@@ -132,6 +141,8 @@ centralidp:
         value: "centralidp.51.178.94.25.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
+      - name: KC_SPI_REALM_RESTAPI_EXTENSION_DEFAULT_SSL_REQUIRED
+        value: "NONE"
 
 sharedidp:
   keycloak:
@@ -168,6 +179,8 @@ sharedidp:
         value: "sharedidp.51.178.94.25.nip.io"
       - name: KC_HOSTNAME_PATH
         value: "/auth/"
+      - name: KC_SPI_REALM_RESTAPI_EXTENSION_DEFAULT_SSL_REQUIRED
+        value: "NONE"
 
 pgadmin4:
   ingress:
@@ -175,6 +188,18 @@ pgadmin4:
     ingressClassName: nginx
     hosts:
       - host: pgadmin4.51.178.94.25.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+
+smtp4dev:
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: smtp4dev.51.178.94.25.nip.io
         paths:
           - path: /
             pathType: Prefix
@@ -241,16 +266,6 @@ bpdm-cleaning-service-dummy:
         issuerUri: "http://centralidp.51.178.94.25.nip.io/auth/realms/CX-Central"
       orchestrator:
         baseUrl: "http://portal-bpdm-orchestrator:80"
-
-smtp4dev:
-  ingress:
-    enabled: true
-    className: "nginx"
-    hosts:
-      - host: "smtp4dev.51.178.94.25.nip.io"
-        paths:
-          - path: /
-            pathType: Prefix
 
 # ============================================================================
 # SSI & Identity Components
