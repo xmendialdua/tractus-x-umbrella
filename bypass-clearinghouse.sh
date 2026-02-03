@@ -25,6 +25,7 @@ POD="portal-portal-backend-postgresql-0"
 PGUSER="portal"
 PGPASSWORD="dbpasswordportal"
 PGDATABASE="postgres"
+PORTAL_SCHEMA="portal"
 
 echo "=========================================="
 echo "Bypass Clearinghouse - Portal Onboarding"
