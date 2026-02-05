@@ -1,0 +1,57 @@
+# =============================================================================
+# CORRECCIONES MANUALES APLICADAS AL DESPLIEGUE DE PORTAL EN OVH
+# =============================================================================
+# Este archivo contiene configuraciones que se han aplicado manualmente
+# después del despliegue inicial con Helm.
+# 
+# IMPORTANTE: Incluir este archivo en futuros upgrades de Helm:
+#   helm upgrade portal umbrella -n portal \
+#     -f charts/values-adopter-portal-for-onboarding-with-persistence.yaml \
+#     -f charts/umbrella/values-ovh-realms-portal.yaml \
+#     -f charts/values-ovh-manual-fixes.yaml
+#
+# Fecha creación: 2026-02-04
+# =============================================================================
+
+portal:
+  frontend:
+    portal:
+      env:
+        # -----------------------------------------------------------------------
+        # FIX: Partner Network View - BPDM Pool URL pública
+        # -----------------------------------------------------------------------
+        # Problema: Frontend no puede resolver URLs internas de Kubernetes desde
+        #           el navegador. La vista Partner Network aparecía vacía porque
+        #           intentaba llamar a http://portal-bpdm-pool (servicio interno)
+        #           desde el navegador del usuario.
+        #
+        # Solución: Configurar URLs públicas de BPDM Pool y Gate para que el
+        #           frontend pueda acceder desde el navegador.
+        #
+        # Aplicado manualmente con:
+        #   kubectl set env deployment/portal-portal -n portal \
+        #     BPDM_POOL_API_URL="https://business-partners.51.178.94.25.nip.io/pool/v6" \
+        #     BPDM_GATE_API_URL="https://business-partners.51.178.94.25.nip.io/gate"
+        #
+        # Fecha: 2026-02-04
+        # Nota: Se usa HTTP en lugar de HTTPS porque nip.io usa certificados
+        #       auto-firmados que el navegador rechaza (ERR_CERT_AUTHORITY_INVALID)
+        # -----------------------------------------------------------------------
+        - name: BPDM_POOL_API_URL
+          value: "http://business-partners.51.178.94.25.nip.io/pool/v6"
+        - name: BPDM_GATE_API_URL
+          value: "http://business-partners.51.178.94.25.nip.io/gate"
+
+# =============================================================================
+# NOTAS PARA FUTURAS CORRECCIONES:
+# =============================================================================
+# Si aplicas más correcciones manuales con kubectl, documéntalas aquí para
+# que no se pierdan en futuros upgrades de Helm.
+#
+# Ejemplo de otras correcciones comunes:
+# - ConfigMaps modificados con kubectl edit
+# - Secrets actualizados manualmente
+# - Anotaciones de ingress añadidas con kubectl annotate
+# - Variables de entorno añadidas con kubectl set env
+# - Límites de recursos ajustados con kubectl set resources
+# =============================================================================

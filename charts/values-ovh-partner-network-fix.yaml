@@ -1,0 +1,17 @@
+# Configuración para habilitar Partner Network view en Portal
+# Fecha: 2026-02-04
+# Problema: Frontend no puede resolver URL interna de BPDM Pool desde el navegador
+# Solución: Configurar URL pública de BPDM Pool en variables de entorno del frontend
+
+portal:
+  frontend:
+    portal:
+      # Variables de entorno que se inyectan en el JavaScript compilado del frontend
+      portalEnv:
+        BPDM_POOL_API_URL: "https://business-partners.51.178.94.25.nip.io/pool/v6"
+        BPDM_GATE_API_URL: "https://business-partners.51.178.94.25.nip.io/gate"
+  
+  # Mantener las configuraciones del backend (ya correctas)
+  bpdm:
+    poolAddress: "http://portal-bpdm-pool:80"
+    portalGateAddress: "http://portal-bpdm-gate:80"
