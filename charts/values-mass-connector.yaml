@@ -76,7 +76,8 @@ tractusx-connector:
           - protocol
           - management
         tls:
-          enabled: false
+          enabled: true
+          secretName: "mass-edc-tls"
   
   # Data Plane
   dataplane:
@@ -99,7 +100,8 @@ tractusx-connector:
         endpoints:
           - public
         tls:
-          enabled: false
+          enabled: true
+          secretName: "mass-edc-tls"
 
 # PostgreSQL dedicado para este EDC
 postgresql:
