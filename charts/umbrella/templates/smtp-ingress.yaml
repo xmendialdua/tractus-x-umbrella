@@ -18,14 +18,38 @@
 */}}
 
 {{ if index .Values "smtp4dev" "enabled" }}
+{{- if .Values.smtp4dev.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: smtp4dev-ingress
   labels:
     name: smtp4dev-ingress
+  {{- with .Values.smtp4dev.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
+  {{- if .Values.smtp4dev.ingress.className }}
+  ingressClassName: {{ .Values.smtp4dev.ingress.className }}
+  {{- end }}
   rules:
+  {{- if .Values.smtp4dev.ingress.hosts }}
+  {{- range .Values.smtp4dev.ingress.hosts }}
+  - host: {{ .host | quote }}
+    http:
+      paths:
+      {{- range .paths }}
+      - path: {{ .path }}
+        pathType: {{ .pathType }}
+        backend:
+          service:
+            name: smtp4dev
+            port: 
+              number: {{ $.Values.smtp4dev.ports.http }}
+      {{- end }}
+  {{- end }}
+  {{- else }}
   - host: {{ .Values.smtp4dev.ingress.url }}
     http:
       paths:
@@ -36,4 +60,6 @@ spec:
             name: smtp4dev
             port: 
               number: {{ .Values.smtp4dev.ports.http }}
+  {{- end }}
+{{- end }}
 {{ end }}
