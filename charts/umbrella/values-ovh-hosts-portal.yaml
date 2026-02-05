@@ -317,6 +317,7 @@ identity-and-trust-bundle:
   ssi-dim-wallet-stub:
     enabled: true  # ← CRÍTICO: Habilitar el subchart explícitamente
     wallet:
+      nameSpace: portal  # ← Desplegar en el mismo namespace que el portal
       host: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
       didHost: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
       stubUrl: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"

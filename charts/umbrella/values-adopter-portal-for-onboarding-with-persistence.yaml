@@ -128,8 +128,6 @@ identity-and-trust-bundle:
   enabled: true  # ✅ FASE 4: Habilitado para DIM Wallet y gestión de identidades
   ssi-dim-wallet-stub:
     enabled: true  # ✅ Habilitar el Wallet Stub explícitamente
-    wallet:
-      namespace: portal  # ✅ Forzar el namespace correcto
   # ✅ Persistencia habilitada (si el bundle usa PostgreSQL)
   postgresql:
     primary:
