@@ -27,6 +27,13 @@ tractusx-connector:
   participant:
     id: "BPNL00000000MASS"
   
+  # PostgreSQL - Configuración de conexión
+  postgresql:
+    auth:
+      username: "mass-edc-user"
+      password: "mass-secure-password-change-me"
+      database: "edc"
+  
   # IATP: Identity and Trust Protocol
   iatp:
     id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS
