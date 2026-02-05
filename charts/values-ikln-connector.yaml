@@ -1,0 +1,130 @@
+###############################################################
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+###############################################################
+
+# Configuración EDC para Ikerlan
+# BPN: BPNL00000002IKLN
+# Namespace: ikln-connector
+# Fecha: 2026-02-05
+
+tractusx-connector:
+  # Identificación del participante
+  participant:
+    id: "BPNL00000002IKLN"
+  
+  # IATP: Identity and Trust Protocol
+  iatp:
+    id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN
+    trustedIssuers:
+      # Solo confiamos en credenciales emitidas por CX-Operator
+      - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
+    sts:
+      dim:
+        # IMPORTANTE: Usar FQDN porque el wallet está en namespace "portal"
+        url: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api/sts
+      oauth:
+        token_url: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/oauth/token
+        client:
+          id: "BPNL00000002IKLN"
+          secret_alias: "client-secret"
+  
+  # Control Plane
+  controlplane:
+    # API Key para management endpoint
+    endpoints:
+      management:
+        authKey: "ikln-api-key-change-in-production"
+    
+    env:
+      # FQDN completo para acceder al wallet en namespace portal
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api
+    
+    # Configuración BDRS
+    bdrs:
+      server:
+        # FQDN completo para acceder a BDRS en namespace portal
+        url: http://bdrs-server.portal.svc.cluster.local:8080/api/v1/directory
+    
+    # Ingress para acceso externo
+    ingresses:
+      - enabled: true
+        hostname: "edc-ikln-control.51.178.94.25.nip.io"
+        className: "nginx"
+        endpoints:
+          - protocol
+          - management
+        tls:
+          enabled: false
+  
+  # Data Plane
+  dataplane:
+    env:
+      # FQDN completo para acceder al wallet en namespace portal
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api
+    
+    # Configuración de token signing
+    token:
+      signer:
+        privatekey_alias: "tokenSignerPrivateKey"
+      verifier:
+        publickey_alias: "tokenSignerPublicKey"
+    
+    # Ingress para acceso externo
+    ingresses:
+      - enabled: true
+        hostname: "edc-ikln-data.51.178.94.25.nip.io"
+        className: "nginx"
+        endpoints:
+          - public
+        tls:
+          enabled: false
+
+# PostgreSQL dedicado para este EDC
+postgresql:
+  enabled: true
+  auth:
+    database: "edc"
+    username: "ikln-edc-user"
+    password: "ikln-secure-password-change-me"  # ⚠️ CAMBIAR EN PRODUCCIÓN
+  primary:
+    persistence:
+      enabled: true
+      size: "5Gi"
+      storageClass: ""  # Usar default storage class
+
+# Vault (usando PostgreSQL como backend para simplificar)
+vault:
+  enabled: true
+  injector:
+    enabled: false
+  server:
+    dev:
+      enabled: true
+      devRootToken: "root"  # ⚠️ CAMBIAR EN PRODUCCIÓN
+  
+  # Configuración de HashiCorp Vault
+  hashicorp:
+    url: "http://{{ .Release.Name }}-vault:8200"
+    token: "root"  # ⚠️ CAMBIAR EN PRODUCCIÓN
+    timeout: 30
+    healthCheck:
+      enabled: true
+      standbyOk: true
+    paths:
+      secret: "/v1/secret"
+      folder: ""
