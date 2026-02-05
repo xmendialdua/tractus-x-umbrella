@@ -1,0 +1,77 @@
+# Fix para Partner Network - Proxy BPDM Pool a través del portal-backend
+# Fecha: 2026-02-04
+# Propósito: Permitir que el frontend acceda a BPDM Pool sin errores CORS
+
+portal:
+  backend:
+    ingress:
+      annotations:
+        nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:3000, http://*.51.178.94.25.nip.io"
+        nginx.ingress.kubernetes.io/enable-cors: "true"
+        nginx.ingress.kubernetes.io/proxy-body-size: 8m
+        nginx.ingress.kubernetes.io/use-regex: "true"
+        # Annotation para reescribir URLs con captura de grupos
+        nginx.ingress.kubernetes.io/configuration-snippet: |
+          rewrite ^/portal-bpdm-pool/(.*)$ /$1 break;
+      className: nginx
+      enabled: true
+      hosts:
+        - host: portal-backend.51.178.94.25.nip.io
+          paths:
+            # NUEVA RUTA: Proxy para BPDM Pool
+            - path: /portal-bpdm-pool
+              pathType: Prefix
+              backend:
+                service: bpdm-pool-proxy
+                port: 8080
+            # Rutas existentes
+            - path: /api/registration
+              pathType: Prefix
+              backend:
+                service: registration-service
+                port: 8080
+            - path: /api/administration
+              pathType: Prefix
+              backend:
+                service: administration-service
+                port: 8080
+            - path: /api/notification
+              pathType: Prefix
+              backend:
+                service: notification-service
+                port: 8080
+            - path: /api/provisioning
+              pathType: Prefix
+              backend:
+                service: provisioning-service
+                port: 8080
+            - path: /api/apps
+              pathType: Prefix
+              backend:
+                service: marketplace-app-service
+                port: 8080
+            - path: /api/services
+              pathType: Prefix
+              backend:
+                service: services-service
+                port: 8080
+  
+  # Configuración de BPDM Pool con URL pública
+  bpdm:
+    poolAddress: "http://business-partners.51.178.94.25.nip.io/pool"
+    portalGateAddress: "http://business-partners.51.178.94.25.nip.io/gate"
+
+# Service para redirigir peticiones a BPDM Pool
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bpdm-pool-proxy
+  namespace: portal
+spec:
+  type: ExternalName
+  externalName: portal-bpdm-pool.portal.svc.cluster.local
+  ports:
+  - port: 8080
+    targetPort: 80
+    protocol: TCP
