@@ -26,3 +26,16 @@ init-container/iam/centralidp/CX-Central-realm_MAssembly.json
 init-container/iam/centralidp/CX-Central-users-0_MAssembly.json
 charts/umbrella/values-orbea-persistence.yaml
 charts/umbrella/values-orbea-portal.yaml
+init-container/iam/centralidp/CX-Central-realm.json.backup-20260128-154127
+init-container/iam/centralidp/CX-Central-realm.json.backup-20260129-091203
+.gitignore
+.gitignore
+init-container/iam/for MAssembly/CX-Central-users-0_MAssembly.json
+init-container/iam/for MAssembly/CX-Central-realm_MAssembly.json
+init-container/iam/centralidp/CX-Central-realm.json.backup-20260129-091350
+init-container/iam/centralidp/CX-Central-realm-51.178.94.25.nip.io.json
+onboarding/MAssembly.txt
+charts/umbrella/values-ovh-hosts-portal-51.68.114.44.nip.io.yaml
+charts/umbrella/values-ovh-hosts-portal-template old.yaml
+terraform-ovh/main.tf. - 2026.01.23 - Generado por Copilot para Ingress (sin probar)
+terraform-ovh/GUIA_TERRAFORM_OVH_Original_sin_formatear.md
