@@ -36,7 +36,7 @@ tractusx-connector:
     sts:
       dim:
         # IMPORTANTE: Usar FQDN porque el wallet está en namespace "portal"
-        url: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api/sts
+        url: http://ssi-dim-wallet-service.portal.svc.cluster.local/api/sts
       oauth:
         token_url: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/oauth/token
         client:
