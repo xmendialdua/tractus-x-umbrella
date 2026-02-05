@@ -56,12 +56,13 @@ echo -e "\n${GREEN}============================================${NC}"
 echo -e "${GREEN}✅ Despliegue completado${NC}"
 echo -e "${GREEN}============================================${NC}"
 
-echo -e "\n${YELLOW}URLs de acceso:${NC}"
-echo -e "Control Plane: http://edc-mass-control.51.178.94.25.nip.io"
-echo -e "Data Plane:    http://edc-mass-data.51.178.94.25.nip.io"
+echo -e "\n${YELLOW}URLs de acceso (HTTPS habilitado):${NC}"
+echo -e "Control Plane: https://edc-mass-control.51.178.94.25.nip.io"
+echo -e "Data Plane:    https://edc-mass-data.51.178.94.25.nip.io"
 
 echo -e "\n${YELLOW}Health Check:${NC}"
-echo -e "curl http://edc-mass-control.51.178.94.25.nip.io/api/check/health"
+echo -e "curl -k https://edc-mass-control.51.178.94.25.nip.io/api/check/health"
+echo -e "(Usar -k para certificados self-signed)"
 
 echo -e "\n${YELLOW}Ver logs:${NC}"
 echo -e "kubectl logs -n mass-connector -l app.kubernetes.io/component=controlplane -f"
