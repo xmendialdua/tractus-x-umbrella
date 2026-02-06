@@ -59,13 +59,13 @@ tractusx-connector:
     
     env:
       # FQDN completo para acceder al wallet en namespace portal
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api
-    
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api      # Aceptar certificados self-signed (solo desarrollo)
+      EDC_JSONLD_HTTPS_ENFORCE: "false"    
     # Configuración BDRS
     bdrs:
       server:
         # FQDN completo para acceder a BDRS en namespace portal
-        url: http://bdrs-server.portal.svc.cluster.local:8080/api/v1/directory
+        url: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
     
     # Ingress para acceso externo
     ingresses:
