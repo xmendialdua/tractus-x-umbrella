@@ -343,6 +343,10 @@ bdrs-server-memory:
         did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL000000000065"
       - bpn: "BPNL00000000015G"
         did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"
+      - bpn: "BPNL00000000MASS"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"
+      - bpn: "BPNL00000000IKLN"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000IKLN"
   server:
     trustedIssuers:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK

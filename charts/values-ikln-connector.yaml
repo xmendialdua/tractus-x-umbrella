@@ -43,9 +43,9 @@ tractusx-connector:
     sts:
       dim:
         # IMPORTANTE: Usar FQDN porque el wallet está en namespace "portal"
-        url: http://ssi-dim-wallet-service.portal.svc.cluster.local/api/sts
+        url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api/sts
       oauth:
-        token_url: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/oauth/token
+        token_url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/oauth/token
         client:
           id: "BPNL00000002IKLN"
           secret_alias: "client-secret"
@@ -59,7 +59,7 @@ tractusx-connector:
     
     env:
       # FQDN completo para acceder al wallet en namespace portal
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
     
     # Configuración BDRS
     bdrs:
@@ -84,7 +84,7 @@ tractusx-connector:
   dataplane:
     env:
       # FQDN completo para acceder al wallet en namespace portal
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://portal-ssi-dim-wallet-stub.portal.svc.cluster.local/api
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
     
     # Configuración de token signing
     token:
