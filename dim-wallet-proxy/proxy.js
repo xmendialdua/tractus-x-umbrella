@@ -109,6 +109,242 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
   }
 });
 
+// Interceptor para /api/sts - Ver qué credenciales se intercambian
+app.use('/api/sts', express.json(), async (req, res) => {
+  console.log('=== Intercepting STS request ===');
+  console.log('Original request body:', JSON.stringify(req.body, null, 2));
+  
+  // ENHANCE REQUEST: Add missing credential types to the request before sending to DIM Wallet
+  let modifiedBody = { ...req.body };
+  
+  if (modifiedBody.grantAccess && modifiedBody.grantAccess.credentialTypes) {
+    const originalTypes = modifiedBody.grantAccess.credentialTypes || [];
+    const enhancedTypes = [
+      ...originalTypes,
+      'FrameworkAgreementCredential',
+      'UsagePurposeCredential'
+    ];
+    modifiedBody.grantAccess.credentialTypes = enhancedTypes;
+    console.log('✨ Enhanced credentialTypes in REQUEST:', enhancedTypes);
+  }
+  
+  try {
+    // Forward MODIFIED request to real DIM Wallet
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(`${DIM_WALLET_URL}/api/sts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': req.headers.authorization || ''
+      },
+      body: JSON.stringify(modifiedBody)
+    });
+
+    const data = await response.text();
+    
+    console.log('STS Response status:', response.status);
+    console.log('STS Response length:', data.length);
+    
+    if (!response.ok) {
+      console.error('STS error:', response.status, data.substring(0, 200));
+      return res.status(response.status).send(data);
+    }
+
+    // Try to decode if it's a JWT
+    try {
+      console.log('Attempting to decode STS response as JWT...');
+      console.log('First 100 chars:', data.substring(0, 100));
+      
+      // The response might be JSON with a jwt field
+      let tokenToDecode = data;
+      try {
+        const jsonResponse = JSON.parse(data);
+        if (jsonResponse.jwt) {
+          console.log('STS response is JSON with jwt field');
+          tokenToDecode = jsonResponse.jwt;
+        }
+      } catch (e) {
+        // Not JSON, assume it's already a JWT string
+        console.log('STS response is direct JWT string');
+      }
+      
+      const decoded = jwt.decode(tokenToDecode, { complete: true });
+      console.log('Decoded result:', decoded ? 'SUCCESS' : 'NULL');
+      if (decoded) {
+        console.log('=== STS JWT DECODED ===');
+        console.log('Header:', JSON.stringify(decoded.header, null, 2));
+        console.log('Payload keys:', Object.keys(decoded.payload || {}));
+        console.log('Full payload:', JSON.stringify(decoded.payload, null, 2));
+        
+        // If token or access_token exists, decode those as well
+        if (decoded.payload?.token) {
+          console.log('\n=== EMBEDDED TOKEN (from token field) ===');
+          try {
+            const embeddedDecoded = jwt.decode(decoded.payload.token, { complete: true });
+            if (embeddedDecoded) {
+              console.log('Embedded payload keys:', Object.keys(embeddedDecoded.payload || {}));
+              console.log('Embedded payload:', JSON.stringify(embeddedDecoded.payload, null, 2));
+            }
+          } catch (e) {
+            console.log('Could not decode embedded token:', e.message);
+          }
+        }
+        
+        if (decoded.payload?.access_token) {
+          console.log('\n=== EMBEDDED TOKEN (from access_token field) ===');
+          try {
+            const embeddedDecoded = jwt.decode(decoded.payload.access_token, { complete: true });
+            if (embeddedDecoded) {
+              console.log('Embedded payload keys:', Object.keys(embeddedDecoded.payload || {}));
+              console.log('Embedded payload:', JSON.stringify(embeddedDecoded.payload, null, 2));
+            }
+          } catch (e) {
+            console.log('Could not decode access_token:', e.message);
+          }
+        }
+        
+        // Check if credentialTypes needs enhancement (token or access_token field)
+        
+        if (decoded.payload?.token) {
+          console.log('\n=== ENHANCING TOKEN field ===');
+          const embeddedDecoded = jwt.decode(decoded.payload.token, { complete: true });
+          if (embeddedDecoded && embeddedDecoded.payload?.credentialTypes) {
+            const existingTypes = embeddedDecoded.payload.credentialTypes || [];
+            console.log('Original credentialTypes:', existingTypes);
+            
+            // Add missing credential types
+            const newCredentialTypes = [
+              ...existingTypes,
+              'FrameworkAgreementCredential',
+              'UsagePurposeCredential'
+            ];
+            
+            console.log('Enhanced credentialTypes:', newCredentialTypes);
+            
+            // Create enhanced embedded token
+            const enhancedEmbeddedPayload = {
+              ...embeddedDecoded.payload,
+              credentialTypes: newCredentialTypes
+            };
+            
+            const enhancedEmbeddedToken = jwt.sign(enhancedEmbeddedPayload, 'dev-secret', {
+              algorithm: 'HS256'
+            });
+            
+            // Create enhanced SI Token with the new embedded token
+            const enhancedSIPayload = {
+              ...decoded.payload,
+              token: enhancedEmbeddedToken
+            };
+            
+            const enhancedSIToken = jwt.sign(enhancedSIPayload, 'dev-secret', {
+              algorithm: 'HS256'
+            });
+            
+            console.log('Returning enhanced SI Token with updated token field');
+            res.setHeader('Content-Type', 'application/json');
+            return res.json({ jwt: enhancedSIToken });
+          }
+        }
+        
+        if (decoded.payload?.access_token) {
+          console.log('\n=== ENHANCING ACCESS_TOKEN field ===');
+          const embeddedDecoded = jwt.decode(decoded.payload.access_token, { complete: true });
+          if (embeddedDecoded && embeddedDecoded.payload?.credentialTypes) {
+            const existingTypes = embeddedDecoded.payload.credentialTypes || [];
+            console.log('Original credentialTypes:', existingTypes);
+            
+            // Add missing credential types
+            const newCredentialTypes = [
+              ...existingTypes,
+              'FrameworkAgreementCredential',
+              'UsagePurposeCredential'
+            ];
+            
+            console.log('Enhanced credentialTypes:', newCredentialTypes);
+            
+            // Create enhanced embedded token
+            const enhancedEmbeddedPayload = {
+              ...embeddedDecoded.payload,
+              credentialTypes: newCredentialTypes
+            };
+            
+            const enhancedEmbeddedToken = jwt.sign(enhancedEmbeddedPayload, 'dev-secret', {
+              algorithm: 'HS256'
+            });
+            
+            // Create enhanced SI Token with the new embedded access_token
+            const enhancedSIPayload = {
+              ...decoded.payload,
+              access_token: enhancedEmbedded Token
+            };
+            
+            const enhancedSIToken = jwt.sign(enhancedSIPayload, 'dev-secret', {
+              algorithm: 'HS256'
+            });
+            
+            console.log('Returning enhanced SI Token with updated access_token field');
+            res.setHeader('Content-Type', 'application/json');
+            return res.json({ jwt: enhancedSIToken });
+          }
+        }
+        
+        // Legacy VP-based enhancement (keeping for compatibility)
+        if (decoded.payload?.vp) {
+          console.log('STS JWT contains VP with credentials:', decoded.payload.vp.verifiableCredential?.length || 0);
+          
+          // If it has VP, enhance it like we do in presentations/query
+          const existingVCs = decoded.payload.vp.verifiableCredential || [];
+          const bpn = decoded.payload.bpn || 'UNKNOWN';
+          const issuerDid = decoded.payload.iss;
+          
+          console.log(`Enhancing STS VP for BPN: ${bpn}`);
+          
+          const frameworkVC = createFrameworkAgreementVC(bpn, issuerDid);
+          const usagePurposeVC = createUsagePurposeVC(bpn, issuerDid);
+          
+          const enhancedPayload = {
+            ...decoded.payload,
+            vp: {
+              ...decoded.payload.vp,
+              verifiableCredential: [
+                ...existingVCs,
+                frameworkVC,
+                usagePurposeVC
+              ]
+            }
+          };
+          
+          console.log('Enhanced STS VP now has credentials:', enhancedPayload.vp.verifiableCredential.length);
+          
+          const enhancedToken = jwt.sign(enhancedPayload, 'dev-secret', {
+            algorithm: 'HS256',
+            header: {
+              kid: decoded.header.kid,
+              typ: 'JWT'
+            }
+          });
+          
+          res.setHeader('Content-Type', 'text/plain');
+          return res.send(enhancedToken);
+        } else {
+          console.log('STS JWT - no credentialTypes field found to enhance, forwarding as-is');
+        }
+      }
+    } catch (decodeError) {
+      console.log('STS response is not a JWT or decode failed:', decodeError.message);
+    }
+    
+    // Forward the original response
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain');
+    res.send(data);
+    
+  } catch (error) {
+    console.error('STS Proxy error:', error);
+    res.status(500).json({ error: 'STS Proxy error', message: error.message });
+  }
+});
+
 // Helper function para crear FrameworkAgreement VC
 function createFrameworkAgreementVC(bpn, issuerDid) {
   const now = Math.floor(Date.now() / 1000);
