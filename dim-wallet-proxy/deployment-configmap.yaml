@@ -19,7 +19,6 @@ data:
   
   proxy.js: |
     const express = require('express');
-    const { createProxyMiddleware } = require('http-proxy-middleware');
     const jwt = require('jsonwebtoken');
 
     const app = express();

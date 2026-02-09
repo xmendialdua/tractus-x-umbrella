@@ -38,8 +38,9 @@ tractusx-connector:
   iatp:
     id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN
     trustedIssuers:
-      # Solo confiamos en credenciales emitidas por CX-Operator
+      # Confiamos en credenciales emitidas por CX-Operator y el provider MASS
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
+      - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS
     sts:
       dim:
         # Usar proxy interceptor que agrega VCs faltantes
