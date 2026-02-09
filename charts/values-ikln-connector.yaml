@@ -62,6 +62,8 @@ tractusx-connector:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
       # Aceptar certificados self-signed (solo desarrollo)
       EDC_JSONLD_HTTPS_ENFORCE: "false"
+      # Deshabilitar verificación SSL completamente (SOLO DESARROLLO)
+      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustAll=true -Djdk.tls.client.protocols=TLSv1.2"
     
     # Configuración BDRS
     bdrs:
@@ -78,8 +80,8 @@ tractusx-connector:
           - protocol
           - management
         tls:
-          enabled: true
-          # Nginx generará certificado self-signed automáticamente
+          enabled: false
+          # TLS deshabilitado para desarrollo - evita problemas con certificados self-signed
           secretName: ""
   
   # Data Plane
@@ -103,8 +105,8 @@ tractusx-connector:
         endpoints:
           - public
         tls:
-          enabled: true
-          # Nginx generará certificado self-signed automáticamente
+          enabled: false
+          # TLS deshabilitado para desarrollo - evita problemas con certificados self-signed
           secretName: ""
 
 # PostgreSQL dedicado para este EDC
