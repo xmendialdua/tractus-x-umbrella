@@ -1,0 +1,100 @@
+###############################################################
+# Kubernetes Job: Business Partner Seeding para IKLN EDC
+# 
+# Este Job se ejecuta automáticamente después de desplegar
+# el conector IKLN para registrar partners confiables.
+#
+# Uso:
+#   kubectl apply -f ikln-connector-seeding.yaml
+###############################################################
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ikln-edc-business-partner-seeding
+  namespace: ikln-connector
+  labels:
+    app: ikln-edc-seeding
+    component: business-partner-registration
+spec:
+  backoffLimit: 3
+  
+  template:
+    metadata:
+      labels:
+        app: ikln-edc-seeding
+    spec:
+      restartPolicy: OnFailure
+      
+      containers:
+      - name: seeding
+        image: curlimages/curl:8.5.0
+        command:
+        - sh
+        - -c
+        - |
+          #!/bin/sh
+          set -e
+          
+          echo "========================================"
+          echo "IKLN EDC Business Partner Seeding"
+          echo "========================================"
+          echo ""
+          
+          EDC_URL="http://ikln-edc-tractusx-connector-controlplane.ikln-connector.svc.cluster.local:8081"
+          API_KEY="ikln-api-key-change-in-production"
+          
+          # Esperar a que EDC esté disponible
+          echo "Esperando a que EDC esté disponible..."
+          RETRIES=30
+          until curl -sf "${EDC_URL}/api/check/health" || [ $RETRIES -eq 0 ]; do
+            echo "  Intento $((30 - RETRIES + 1))/30..."
+            sleep 10
+            RETRIES=$((RETRIES - 1))
+          done
+          
+          if [ $RETRIES -eq 0 ]; then
+            echo "ERROR: EDC no disponible después de 5 minutos"
+            exit 1
+          fi
+          
+          echo "✓ EDC disponible"
+          echo ""
+          
+          # Registrar MASS como trusted partner
+          echo "Registrando MASS (BPNL00000000MASS) como trusted partner..."
+          
+          HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
+            "${EDC_URL}/management/v3/business-partner-groups" \
+            -H "X-Api-Key: ${API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "@context": {
+                "tx": "https://w3id.org/tractusx/v0.0.1/ns/"
+              },
+              "@id": "BPNL00000000MASS",
+              "tx:groups": "trusted-partner"
+            }')
+          
+          if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ MASS registrado exitosamente (HTTP $HTTP_CODE)"
+          else
+            echo "✗ Error al registrar MASS (HTTP $HTTP_CODE)"
+            cat /tmp/response.json
+            exit 1
+          fi
+          
+          echo ""
+          echo "========================================"
+          echo "Seeding completado exitosamente"
+          echo "========================================"
+          
+          # Mostrar partners registrados
+          echo ""
+          echo "Partners registrados en IKLN:"
+          curl -s -X POST \
+            "${EDC_URL}/management/v3/business-partner-groups/request" \
+            -H "X-Api-Key: ${API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"}, "@type": "QuerySpec"}' \
+            | grep -o 'BPNL[0-9A-Z]*' || echo "  (formato no parseado, pero registro exitoso)"
