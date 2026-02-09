@@ -12,11 +12,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Parse JSON bodies
-app.use(express.json());
-
 // Interceptor para /api/presentations/query - Agrega VCs faltantes
-app.use('/api/presentations/query', async (req, res) => {
+// NOTE: We parse JSON only in this specific route to avoid consuming the body stream
+// which would prevent the proxy middleware from working correctly
+app.use('/api/presentations/query', express.json(), async (req, res) => {
   console.log('Intercepting presentation query request');
   
   try {
