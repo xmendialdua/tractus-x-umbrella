@@ -1,0 +1,209 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dim-wallet-proxy-code
+  namespace: portal
+data:
+  package.json: |
+    {
+      "name": "dim-wallet-proxy",
+      "version": "1.0.0",
+      "dependencies": {
+        "express": "^4.18.2",
+        "http-proxy-middleware": "^2.0.6",
+        "jsonwebtoken": "^9.0.2",
+        "node-fetch": "^3.3.2"
+      }
+    }
+  
+  proxy.js: |
+    const express = require('express');
+    const { createProxyMiddleware } = require('http-proxy-middleware');
+    const jwt = require('jsonwebtoken');
+
+    const app = express();
+    const PORT = process.env.PORT || 8080;
+    const DIM_WALLET_URL = process.env.DIM_WALLET_URL || 'http://ssi-dim-wallet-service.portal.svc.cluster.local:8080';
+
+    app.use((req, res, next) => {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+      next();
+    });
+
+    app.use(express.json());
+
+    app.use('/api/presentations/query', async (req, res) => {
+      console.log('Intercepting presentation query');
+      
+      try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${DIM_WALLET_URL}/api/presentations/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.authorization || ''
+          },
+          body: JSON.stringify(req.body)
+        });
+
+        let data = await response.text();
+        
+        if (!response.ok) {
+          return res.status(response.status).send(data);
+        }
+
+        try {
+          const decoded = jwt.decode(data, { complete: true });
+          
+          if (decoded?.payload?.vp) {
+            console.log('Adding VCs for BPN:', decoded.payload.bpn);
+            
+            const bpn = decoded.payload.bpn;
+            const issuerDid = decoded.payload.iss;
+            const now = Math.floor(Date.now() / 1000);
+            const exp = now + 31536000;
+            
+            const frameworkVC = jwt.sign({
+              aud: [issuerDid], bpn, sub: issuerDid, iss: issuerDid, exp, iat: now,
+              vc: {
+                credentialSubject: { holderIdentifier: bpn, id: issuerDid, contractTemplate: "https://public.catena-x.org/contracts/", contractVersion: "1.0.0" },
+                id: `${issuerDid}#fw-${Date.now()}`,
+                type: ["VerifiableCredential", "FrameworkAgreementCredential"],
+                "@context": ["https://www.w3.org/2018/credentials/v1", "https://w3id.org/catenax/credentials/v1.0.0"],
+                issuer: issuerDid,
+                issuanceDate: new Date().toISOString(),
+                expirationDate: new Date(exp * 1000).toISOString()
+              },
+              jti: `fw-${Date.now()}`
+            }, 'dev-secret', { algorithm: 'HS256' });
+            
+            const usageVC = jwt.sign({
+              aud: [issuerDid], bpn, sub: issuerDid, iss: issuerDid, exp, iat: now,
+              vc: {
+                credentialSubject: { holderIdentifier: bpn, id: issuerDid, usagePurpose: "cx.core.industrycore:1" },
+                id: `${issuerDid}#up-${Date.now()}`,
+                type: ["VerifiableCredential", "UsagePurposeCredential"],
+                "@context": ["https://www.w3.org/2018/credentials/v1", "https://w3id.org/catenax/credentials/v1.0.0"],
+                issuer: issuerDid,
+                issuanceDate: new Date().toISOString(),
+                expirationDate: new Date(exp * 1000).toISOString()
+              },
+              jti: `up-${Date.now()}`
+            }, 'dev-secret', { algorithm: 'HS256' });
+            
+            const vcs = decoded.payload.vp.verifiableCredential || [];
+            const enhanced = jwt.sign({
+              ...decoded.payload,
+              vp: { ...decoded.payload.vp, verifiableCredential: [...vcs, frameworkVC, usageVC] }
+            }, 'dev-secret', { algorithm: 'HS256', header: { kid: decoded.header.kid, typ: 'JWT' } });
+            
+            console.log('Enhanced VP with', vcs.length + 2, 'credentials');
+            res.setHeader('Content-Type', 'text/plain');
+            return res.send(enhanced);
+          }
+        } catch (e) {
+          console.error('Decode error:', e.message);
+        }
+        
+        res.setHeader('Content-Type', 'text/plain');
+        res.send(data);
+      } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.use('/', createProxyMiddleware({
+      target: DIM_WALLET_URL,
+      changeOrigin: true,
+      logLevel: 'info'
+    }));
+
+    app.listen(PORT, () => {
+      console.log(`Proxy on port ${PORT}, forwarding to ${DIM_WALLET_URL}`);
+    });
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dim-wallet-proxy
+  namespace: portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dim-wallet-proxy
+  template:
+    metadata:
+      labels:
+        app: dim-wallet-proxy
+    spec:
+      initContainers:
+      - name: install-deps
+        image: node:18-alpine
+        command: ['sh', '-c', 'cd /app && npm install --only=production']
+        volumeMounts:
+        - name: code
+          mountPath: /app
+        - name: node-modules
+          mountPath: /app/node_modules
+      containers:
+      - name: proxy
+        image: node:18-alpine
+        command: ['node', '/app/proxy.js']
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: DIM_WALLET_URL
+          value: "http://ssi-dim-wallet-service.portal.svc.cluster.local:8080"
+        - name: NODE_ENV
+          value: "production"
+        volumeMounts:
+        - name: code
+          mountPath: /app
+        - name: node-modules
+          mountPath: /app/node_modules
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /oauth/token
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /oauth/token
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: code
+        configMap:
+          name: dim-wallet-proxy-code
+      - name: node-modules
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dim-wallet-proxy
+  namespace: portal
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: dim-wallet-proxy

@@ -19,7 +19,7 @@ spec:
       containers:
       - name: proxy
         image: dim-wallet-proxy:latest
-        imagePullPolicy: Never  # Para desarrollo local con kind/minikube
+        imagePullPolicy: IfNotPresent  # Usar imagen si ya está en el nodo
         ports:
         - containerPort: 8080
           name: http
