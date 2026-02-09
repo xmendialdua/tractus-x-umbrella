@@ -40,9 +40,15 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
     // Decode the JWT VP (Verifiable Presentation)
     let vpToken = data;
     
+    console.log('Received DIM Wallet response, length:', data.length);
+    
     try {
       // El token viene como texto plano (JWT)
       const decoded = jwt.decode(vpToken, { complete: true });
+      
+      console.log('Decoded token exists:', !!decoded);
+      console.log('Has payload:', !!decoded?.payload);
+      console.log('Has vp:', !!decoded?.payload?.vp);
       
       if (decoded && decoded.payload && decoded.payload.vp) {
         console.log('Original VP has credentials:', decoded.payload.vp.verifiableCredential?.length || 0);
@@ -120,7 +126,9 @@ function createFrameworkAgreementVC(bpn, issuerDid) {
         holderIdentifier: bpn,
         id: issuerDid,
         contractTemplate: "https://public.catena-x.org/contracts/",
-        contractVersion: "1.0.0"
+        contractVersion: "1.0.0",
+        // Claim específico que Tractus-X policy evaluator busca
+        "https://w3id.org/catenax/2025/9/policy/FrameworkAgreement": "DataExchangeGovernance:1.0"
       },
       id: `${issuerDid}#framework-agreement-${Date.now()}`,
       type: ["VerifiableCredential", "FrameworkAgreementCredential"],
@@ -152,7 +160,9 @@ function createUsagePurposeVC(bpn, issuerDid) {
       credentialSubject: {
         holderIdentifier: bpn,
         id: issuerDid,
-        usagePurpose: "cx.core.industrycore:1"
+        usagePurpose: "cx.core.industrycore:1",
+        // Claim específico que Tractus-X policy evaluator busca
+        "https://w3id.org/catenax/2025/9/policy/UsagePurpose": "cx.core.industrycore:1"
       },
       id: `${issuerDid}#usage-purpose-${Date.now()}`,
       type: ["VerifiableCredential", "UsagePurposeCredential"],

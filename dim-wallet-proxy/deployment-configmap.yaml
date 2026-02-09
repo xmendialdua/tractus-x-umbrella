@@ -31,9 +31,7 @@ data:
       next();
     });
 
-    app.use(express.json());
-
-    app.use('/api/presentations/query', async (req, res) => {
+    app.use('/api/presentations/query', express.json(), async (req, res) => {
       console.log('Intercepting presentation query');
       
       try {
@@ -49,12 +47,18 @@ data:
 
         let data = await response.text();
         
+        console.log('Received DIM Wallet response, length:', data.length);
+        
         if (!response.ok) {
           return res.status(response.status).send(data);
         }
 
         try {
           const decoded = jwt.decode(data, { complete: true });
+          
+          console.log('Decoded token exists:', !!decoded);
+          console.log('Has payload:', !!decoded?.payload);
+          console.log('Has vp:', !!decoded?.payload?.vp);
           
           if (decoded?.payload?.vp) {
             console.log('Adding VCs for BPN:', decoded.payload.bpn);
@@ -67,7 +71,7 @@ data:
             const frameworkVC = jwt.sign({
               aud: [issuerDid], bpn, sub: issuerDid, iss: issuerDid, exp, iat: now,
               vc: {
-                credentialSubject: { holderIdentifier: bpn, id: issuerDid, contractTemplate: "https://public.catena-x.org/contracts/", contractVersion: "1.0.0" },
+                credentialSubject: { holderIdentifier: bpn, id: issuerDid, contractTemplate: "https://public.catena-x.org/contracts/", contractVersion: "1.0.0", "https://w3id.org/catenax/2025/9/policy/FrameworkAgreement": "DataExchangeGovernance:1.0" },
                 id: `${issuerDid}#fw-${Date.now()}`,
                 type: ["VerifiableCredential", "FrameworkAgreementCredential"],
                 "@context": ["https://www.w3.org/2018/credentials/v1", "https://w3id.org/catenax/credentials/v1.0.0"],
@@ -81,7 +85,7 @@ data:
             const usageVC = jwt.sign({
               aud: [issuerDid], bpn, sub: issuerDid, iss: issuerDid, exp, iat: now,
               vc: {
-                credentialSubject: { holderIdentifier: bpn, id: issuerDid, usagePurpose: "cx.core.industrycore:1" },
+                credentialSubject: { holderIdentifier: bpn, id: issuerDid, usagePurpose: "cx.core.industrycore:1", "https://w3id.org/catenax/2025/9/policy/UsagePurpose": "cx.core.industrycore:1" },
                 id: `${issuerDid}#up-${Date.now()}`,
                 type: ["VerifiableCredential", "UsagePurposeCredential"],
                 "@context": ["https://www.w3.org/2018/credentials/v1", "https://w3id.org/catenax/credentials/v1.0.0"],
