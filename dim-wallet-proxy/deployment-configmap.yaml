@@ -143,12 +143,12 @@ spec:
       initContainers:
       - name: install-deps
         image: node:18-alpine
-        command: ['sh', '-c', 'cd /app && npm install --only=production']
+        command: ['sh', '-c', 'cp /code-src/* /app/ && cd /app && npm install --only=production']
         volumeMounts:
-        - name: code
+        - name: code-src
+          mountPath: /code-src
+        - name: app-dir
           mountPath: /app
-        - name: node-modules
-          mountPath: /app/node_modules
       containers:
       - name: proxy
         image: node:18-alpine
@@ -163,10 +163,8 @@ spec:
         - name: NODE_ENV
           value: "production"
         volumeMounts:
-        - name: code
+        - name: app-dir
           mountPath: /app
-        - name: node-modules
-          mountPath: /app/node_modules
         resources:
           requests:
             cpu: 100m
@@ -175,22 +173,20 @@ spec:
             cpu: 500m
             memory: 512Mi
         readinessProbe:
-          httpGet:
-            path: /oauth/token
+          tcpSocket:
             port: 8080
-          initialDelaySeconds: 10
+          initialDelaySeconds: 5
           periodSeconds: 5
         livenessProbe:
-          httpGet:
-            path: /oauth/token
+          tcpSocket:
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
-      - name: code
+      - name: code-src
         configMap:
           name: dim-wallet-proxy-code
-      - name: node-modules
+      - name: app-dir
         emptyDir: {}
 
 ---
