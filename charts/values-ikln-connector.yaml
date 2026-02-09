@@ -42,10 +42,10 @@ tractusx-connector:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
     sts:
       dim:
-        # IMPORTANTE: Usar FQDN porque el wallet está en namespace "portal"
-        url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api/sts
+        # Usar proxy interceptor que agrega VCs faltantes
+        url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api/sts
       oauth:
-        token_url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/oauth/token
+        token_url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/oauth/token
         client:
           id: "BPNL00000002IKLN"
           secret_alias: "client-secret"
@@ -58,8 +58,8 @@ tractusx-connector:
         authKey: "ikln-api-key-change-in-production"
     
     env:
-      # FQDN completo para acceder al wallet en namespace portal
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
+      # Usar proxy interceptor que agrega VCs faltantes
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
       # Aceptar certificados self-signed (solo desarrollo)
       EDC_JSONLD_HTTPS_ENFORCE: "false"
       # Deshabilitar verificación SSL completamente (SOLO DESARROLLO)
@@ -87,8 +87,8 @@ tractusx-connector:
   # Data Plane
   dataplane:
     env:
-      # FQDN completo para acceder al wallet en namespace portal
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
+      # Usar proxy interceptor que agrega VCs faltantes
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
     
     # Configuración de token signing
     token:
