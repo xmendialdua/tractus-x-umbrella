@@ -318,13 +318,34 @@ identity-and-trust-bundle:
     enabled: true  # ← CRÍTICO: Habilitar el subchart explícitamente
     wallet:
       nameSpace: portal  # ← Desplegar en el mismo namespace que el portal
+      
+      # ✅ Seeding: BPNs para los que se crearán wallets automáticamente
+      seeding:
+        bpnList: "BPNL00000003CRHK,BPNL000000000065,BPNL00000000015G,BPNL00000000MASS,BPNL00000000IKLN"
+      
+      # ✅ Configuración básica del wallet
+      baseWalletBpn: "BPNL00000003CRHK"  # Operador BPN
+      statusListVcId: "8a6c7486-1e1f-4555-bdd2-1a178182651e"  # ID del VC de lista de estado
+      tokenExpiryTime: "5"  # Tiempo de expiración del token en segundos
+      
+      # ✅ URLs del wallet
       host: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
       didHost: "ssi-dim-wallet-stub.51.178.94.25.nip.io"
       stubUrl: "http://ssi-dim-wallet-stub.51.178.94.25.nip.io"
+      
+      # ✅ Integración con Portal Backend
       portal:
         host: "http://portal-backend.51.178.94.25.nip.io"
+        waitTime: "60"  # Segundos de espera antes de enviar datos al portal
+        clientId: "sa-cl2-05"
+        clientSecret: "changeme"  # ⚠️ CAMBIAR por el valor real de tu Keycloak
+      
+      # ✅ Integración con Keycloak
       keycloak:
+        realm: "CX-Central"
         authServerUrl: "http://centralidp.51.178.94.25.nip.io/auth"
+      
+      # ✅ Ingress
       ingress:
         enabled: true
         className: nginx

@@ -129,6 +129,7 @@ identity-and-trust-bundle:
   ssi-dim-wallet-stub:
     enabled: true  # ✅ Habilitar el Wallet Stub explícitamente
   # ✅ Persistencia habilitada (si el bundle usa PostgreSQL)
+  # La configuración completa del wallet está en values-ovh-hosts-portal.yaml
   postgresql:
     primary:
       persistence:

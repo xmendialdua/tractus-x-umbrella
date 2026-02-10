@@ -5,6 +5,10 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = 8080;
 
+// Add middleware to handle both JSON and form-urlencoded requests
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const DIM_WALLET_URL = process.env.DIM_WALLET_URL || 'http://ssi-dim-wallet-service.portal.svc.cluster.local:8080';
 
 console.log(`🚀 DIM Wallet Proxy starting on port ${PORT}`);
@@ -14,6 +18,46 @@ console.log(`✨ Using REQUEST enhancement strategy (no response modification)`)
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', strategy: 'request-enhancement' });
+});
+
+// OAuth token endpoint - supports both JSON and form-urlencoded
+app.post('/oauth/token', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] POST /oauth/token`);
+  
+  try {
+    // Forward to DIM Wallet with appropriate content type
+    const contentType = req.headers['content-type'] || 'application/x-www-form-urlencoded';
+    let body;
+    
+    if (contentType.includes('application/json')) {
+      body = JSON.stringify(req.body);
+    } else {
+      // Form-urlencoded - convert to URLSearchParams
+      body = new URLSearchParams(req.body).toString();
+    }
+    
+    const response = await fetch(`${DIM_WALLET_URL}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType
+      },
+      body: body
+    });
+
+    const data = await response.text();
+    
+    if (!response.ok) {
+      console.error('OAuth token error:', response.status, data.substring(0, 200));
+      return res.status(response.status).send(data);
+    }
+
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
+    res.send(data);
+
+  } catch (error) {
+    console.error('Error in /oauth/token proxy:', error);
+    res.status(500).json({ error: 'Proxy error', details: error.message });
+  }
 });
 
 // Helper function to create FrameworkAgreement VC
@@ -123,12 +167,28 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
   }
 });
 
-// Intercept /api/sts - REQUEST ENHANCEMENT STRATEGY
+// Intercept /api/sts - REQUEST ENHANCEMENT STRATEGY + SIGNTOKEN BUG FIX
 app.use('/api/sts', express.json(), async (req, res) => {
   console.log(`\n[${new Date().toISOString()}] === Intercepting STS request ===`);
   console.log('Original request body:', JSON.stringify(req.body, null, 2));
 
   try {
+    // CHECK FOR IATP DISABLED (empty DIDs)
+    const hasEmptyDids = req.body.grantAccess && 
+                        (req.body.grantAccess.consumerDid === "" || 
+                         req.body.grantAccess.providerDid === "");
+    
+    if (hasEmptyDids) {
+      console.log('⚠️ IATP DISABLED detected (empty DIDs) - returning dummy token');
+      
+      // Return a dummy successful response
+      // When IATP is disabled, EDC doesn't validate the token content
+      return res.status(200).json({
+        token: "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJkdW1teSIsImlzcyI6ImR1bW15IiwiZXhwIjo5OTk5OTk5OTk5fQ.",
+        expiresIn: 3600
+      });
+    }
+    
     // ENHANCE REQUEST: Add missing credential types before sending to DIM Wallet
     let modifiedBody = { ...req.body };
     
@@ -145,13 +205,59 @@ app.use('/api/sts', express.json(), async (req, res) => {
       modifiedBody.grantAccess.credentialTypes = enhancedTypes;
       console.log('✨ Enhanced credentialTypes in REQUEST:', enhancedTypes);
     }
+
+    // FIX FOR DIM WALLET STUB BUG: signToken uses wrong BPN for partner
+    // The stub incorrectly uses the BPN from the Bearer token instead of the audience
+    // Workaround: For signToken requests, get a Bearer token from the audience BPN first
+    let authHeader = req.headers.authorization || '';
     
-    // Forward MODIFIED request to DIM Wallet
+    if (modifiedBody.signToken) {
+      console.log('🔧 Detected signToken request - applying BUG FIX for partner BPN');
+      
+      try {
+        // Extract BPN from audience DID
+        const audienceDid = modifiedBody.signToken.audience;
+        const audienceBPN = audienceDid.split(':').pop();
+        const subjectDid = modifiedBody.signToken.subject;
+        const subjectBPN = subjectDid.split(':').pop();
+        
+        console.log(`🎯 Correct audience BPN should be: ${audienceBPN}`);
+        console.log(`🎯 Subject (issuer) BPN is: ${subjectBPN}`);
+        
+        // Get OAuth token for the audience (consumer) BPN to trick the stub
+        // This makes the stub think the request is coming from the audience, 
+        // so it will use the correct partner BPN
+        const tokenResponse = await fetch(`${DIM_WALLET_URL}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            'grant_type': 'client_credentials',
+            'client_id': audienceDid,
+            'client_secret': 'client_secret',
+            'scope': 'openid'
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          authHeader = `Bearer ${tokenData.access_token}`;
+          console.log('✅ Obtained Bearer token for audience BPN:', audienceBPN);
+        } else {
+          console.warn('⚠️ Could not obtain audience Bearer token, using original');
+        }
+      } catch (bugfixError) {
+        console.warn('⚠️ BUG FIX failed, continuing with original request:', bugfixError.message);
+      }
+    }
+    
+    // Forward MODIFIED request to DIM Wallet (with corrected Bearer token for signToken)
     const response = await fetch(`${DIM_WALLET_URL}/api/sts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': req.headers.authorization || ''
+        'Authorization': authHeader
       },
       body: JSON.stringify(modifiedBody)
     });
@@ -159,14 +265,34 @@ app.use('/api/sts', express.json(), async (req, res) => {
     const data = await response.text();
     
     console.log('✅ STS Response status:', response.status);
-    console.log('✅ Request enhancement applied - DIM Wallet returned enhanced credentials');
     
     if (!response.ok) {
       console.error('STS error:', response.status, data.substring(0, 200));
       return res.status(response.status).send(data);
     }
 
-    // Optional: Decode for logging/debugging (NO MODIFICATION)
+    // Verify the fix worked for signToken
+    if (modifiedBody.signToken) {
+      try {
+        const decoded = jwt.decode(data, { complete: true });
+        if (decoded && decoded.payload) {
+          const audienceDid = modifiedBody.signToken.audience;
+          const expectedBPN = audienceDid.split(':').pop();
+          const actualAudience = decoded.payload.aud || '';
+          const actualBPN = actualAudience.split(':').pop();
+          
+          if (actualBPN === expectedBPN) {
+            console.log('✅ BUG FIX SUCCESSFUL: Token has correct audience BPN:', actualBPN);
+          } else {
+            console.error('❌ BUG FIX FAILED: Expected BPN', expectedBPN, 'but got', actualBPN);
+          }
+        }
+      } catch (e) {
+        console.log('Could not verify fix:', e.message);
+      }
+    }
+
+    // Optional: Decode for logging/debugging
     try {
       let tokenToDecode = data;
       try {
@@ -189,7 +315,7 @@ app.use('/api/sts', express.json(), async (req, res) => {
       console.log('Debug decode skipped:', decodeError.message);
     }
     
-    // Forward the original response (already enhanced via REQUEST modification)
+    // Forward the response
     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
     res.send(data);
 
