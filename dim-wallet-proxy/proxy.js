@@ -234,7 +234,7 @@ app.use('/api/sts', express.json(), async (req, res) => {
           },
           body: new URLSearchParams({
             'grant_type': 'client_credentials',
-            'client_id': audienceDid,
+            'client_id': audienceBPN,  // FIX: Use BPN not full DID
             'client_secret': 'client_secret',
             'scope': 'openid'
           })
