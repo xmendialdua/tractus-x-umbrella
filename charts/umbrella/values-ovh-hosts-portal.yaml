@@ -321,7 +321,7 @@ identity-and-trust-bundle:
       
       # ✅ Seeding: BPNs para los que se crearán wallets automáticamente
       seeding:
-        bpnList: "BPNL00000003CRHK,BPNL000000000065,BPNL00000000015G,BPNL00000000MASS,BPNL00000000IKLN"
+        bpnList: "BPNL00000003CRHK,BPNL000000000065,BPNL00000000015G,BPNL00000000MASS,BPNL00000002IKLN"
       
       # ✅ Configuración básica del wallet
       baseWalletBpn: "BPNL00000003CRHK"  # Operador BPN
@@ -366,8 +366,8 @@ bdrs-server-memory:
         did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"
       - bpn: "BPNL00000000MASS"
         did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"
-      - bpn: "BPNL00000000IKLN"
-        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000IKLN"
+      - bpn: "BPNL00000002IKLN"
+        did: "did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN"
   server:
     trustedIssuers:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
