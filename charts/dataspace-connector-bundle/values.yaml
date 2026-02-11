@@ -79,7 +79,8 @@ tractusx-connector:
     ingresses:
       # tractusx-connector.controlplane.ingresses[0].enabled -- Enables ingress creation
       # @section -- EDC Ingress Configuration
-      - enabled: true
+      # NOTA: Deshabilitado por defecto para evitar conflictos cuando se despliegan múltiples conectores
+      - enabled: false
         # -- The hostname to be used to precisely map incoming traffic onto the underlying network service
         # @section -- EDC Ingress Configuration
         hostname: "example-controlplane.tx.test"
@@ -113,7 +114,8 @@ tractusx-connector:
     ingresses:
       # tractusx-connector.dataplane.ingresses[0].enabled -- Enables ingress creation
       # @section -- EDC Ingress Configuration
-      - enabled: true
+      # NOTA: Deshabilitado por defecto para evitar conflictos cuando se despliegan múltiples conectores
+      - enabled: false
         # -- The hostname to be used to precisely map incoming traffic onto the underlying network service
         # @section -- EDC Ingress Configuration
         hostname: "example-dataplane.tx.test"

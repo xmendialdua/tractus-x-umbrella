@@ -35,7 +35,7 @@ kubectl label namespace ikln-connector name=ikln-connector --overwrite
 
 # Desplegar EDC Ikerlan
 echo -e "\n${YELLOW}[3/4] Desplegando EDC para Ikerlan...${NC}"
-helm upgrade --install ikln-edc tractusx-dev/dataspace-connector-bundle \
+helm upgrade --install ikln-edc ./charts/dataspace-connector-bundle \
   --namespace ikln-connector \
   --values /home/xmendialdua/projects/assembly/tractus-x-umbrella/charts/values-ikln-connector.yaml \
   --timeout 15m \
