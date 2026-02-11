@@ -17,11 +17,15 @@ set -e
 echo "🔐 Creando certificados TLS auto-firmados para conectores..."
 echo ""
 
-# Crear directorio temporal para certificados
-TEMP_DIR=$(mktemp -d)
-cd "$TEMP_DIR"
+# Obtener el directorio del script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "📁 Usando directorio temporal: $TEMP_DIR"
+# Crear subcarpetas para organizar certificados
+echo "📁 Creando estructura de directorios..."
+mkdir -p "$SCRIPT_DIR/edc-ikln-control-plane"
+mkdir -p "$SCRIPT_DIR/edc-ikln-data-plane"
+mkdir -p "$SCRIPT_DIR/edc-mass-control-plane"
+mkdir -p "$SCRIPT_DIR/edc-mass-data-plane"
 echo ""
 
 # =============================================================================
@@ -33,28 +37,34 @@ echo "🔧 Generando certificados para IKLN Connector..."
 # Control Plane
 echo "  → Control Plane (edc-ikln-control.51.178.94.25.nip.io)"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ikln-control-tls.key -out ikln-control-tls.crt \
+  -keyout "$SCRIPT_DIR/edc-ikln-control-plane/tls.key" \
+  -out "$SCRIPT_DIR/edc-ikln-control-plane/tls.crt" \
   -subj "/CN=edc-ikln-control.51.178.94.25.nip.io" \
   2>/dev/null
 
 kubectl create secret tls edc-ikln-control-tls \
-  --cert=ikln-control-tls.crt --key=ikln-control-tls.key \
+  --cert="$SCRIPT_DIR/edc-ikln-control-plane/tls.crt" \
+  --key="$SCRIPT_DIR/edc-ikln-control-plane/tls.key" \
   -n ikln-connector --dry-run=client -o yaml | kubectl apply -f -
 
 echo "  ✓ Secret edc-ikln-control-tls creado en namespace ikln-connector"
+echo "  ✓ Certificados guardados en: edc-ikln-control-plane/"
 
 # Data Plane
 echo "  → Data Plane (edc-ikln-data.51.178.94.25.nip.io)"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ikln-data-tls.key -out ikln-data-tls.crt \
+  -keyout "$SCRIPT_DIR/edc-ikln-data-plane/tls.key" \
+  -out "$SCRIPT_DIR/edc-ikln-data-plane/tls.crt" \
   -subj "/CN=edc-ikln-data.51.178.94.25.nip.io" \
   2>/dev/null
 
 kubectl create secret tls edc-ikln-data-tls \
-  --cert=ikln-data-tls.crt --key=ikln-data-tls.key \
+  --cert="$SCRIPT_DIR/edc-ikln-data-plane/tls.crt" \
+  --key="$SCRIPT_DIR/edc-ikln-data-plane/tls.key" \
   -n ikln-connector --dry-run=client -o yaml | kubectl apply -f -
 
 echo "  ✓ Secret edc-ikln-data-tls creado en namespace ikln-connector"
+echo "  ✓ Certificados guardados en: edc-ikln-data-plane/"
 echo ""
 
 # =============================================================================
@@ -66,38 +76,54 @@ echo "🔧 Generando certificados para MASS Connector..."
 # Control Plane
 echo "  → Control Plane (edc-mass-control.51.178.94.25.nip.io)"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout mass-control-tls.key -out mass-control-tls.crt \
+  -keyout "$SCRIPT_DIR/edc-mass-control-plane/tls.key" \
+  -out "$SCRIPT_DIR/edc-mass-control-plane/tls.crt" \
   -subj "/CN=edc-mass-control.51.178.94.25.nip.io" \
   2>/dev/null
 
 kubectl create secret tls edc-mass-control-tls \
-  --cert=mass-control-tls.crt --key=mass-control-tls.key \
+  --cert="$SCRIPT_DIR/edc-mass-control-plane/tls.crt" \
+  --key="$SCRIPT_DIR/edc-mass-control-plane/tls.key" \
   -n mass-connector --dry-run=client -o yaml | kubectl apply -f -
 
 echo "  ✓ Secret edc-mass-control-tls creado en namespace mass-connector"
+echo "  ✓ Certificados guardados en: edc-mass-control-plane/"
 
 # Data Plane
 echo "  → Data Plane (edc-mass-data.51.178.94.25.nip.io)"
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout mass-data-tls.key -out mass-data-tls.crt \
+  -keyout "$SCRIPT_DIR/edc-mass-data-plane/tls.key" \
+  -out "$SCRIPT_DIR/edc-mass-data-plane/tls.crt" \
   -subj "/CN=edc-mass-data.51.178.94.25.nip.io" \
   2>/dev/null
 
 kubectl create secret tls edc-mass-data-tls \
-  --cert=mass-data-tls.crt --key=mass-data-tls.key \
+  --cert="$SCRIPT_DIR/edc-mass-data-plane/tls.crt" \
+  --key="$SCRIPT_DIR/edc-mass-data-plane/tls.key" \
   -n mass-connector --dry-run=client -o yaml | kubectl apply -f -
 
 echo "  ✓ Secret edc-mass-data-tls creado en namespace mass-connector"
+echo "  ✓ Certificados guardados en: edc-mass-data-plane/"
 echo ""
 
 # =============================================================================
-# LIMPIEZA
+# RESUMEN
 # =============================================================================
 
-cd - > /dev/null
-rm -rf "$TEMP_DIR"
-
-echo "🧹 Archivos temporales eliminados"
+echo "📋 Estructura de certificados creada:"
+echo "   crts/"
+echo "   ├── edc-ikln-control-plane/"
+echo "   │   ├── tls.crt"
+echo "   │   └── tls.key"
+echo "   ├── edc-ikln-data-plane/"
+echo "   │   ├── tls.crt"
+echo "   │   └── tls.key"
+echo "   ├── edc-mass-control-plane/"
+echo "   │   ├── tls.crt"
+echo "   │   └── tls.key"
+echo "   └── edc-mass-data-plane/"
+echo "       ├── tls.crt"
+echo "       └── tls.key"
 echo ""
 
 # =============================================================================
