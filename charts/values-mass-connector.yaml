@@ -61,13 +61,10 @@ tractusx-connector:
     env:
       # Usar proxy interceptor que agrega VCs faltantes
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      # Aceptar certificados self-signed (solo desarrollo)
-      EDC_JSONLD_HTTPS_ENFORCE: "false"
-      # Deshabilitar verificación SSL completamente (SOLO DESARROLLO)
-      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustAll=true -Djdk.tls.client.protocols=TLSv1.2"
-      # TESTING ONLY: Deshabilitar validación IATP para bypass DIM wallet stub bug
-      # Esto hace que los mensajes DSP no requieran SI tokens
-      # COMENTADO TEMPORALMENTE - Causa conflicto en Helm patch
+      # SEGURIDAD HABILITADA: Forzar HTTPS en JSON-LD
+      EDC_JSONLD_HTTPS_ENFORCE: "true"
+      # SEGURIDAD HABILITADA: Validación IATP activa para autenticación DSP
+      # Las siguientes líneas están comentadas para mantener la seguridad activa
       # EDC_IAM_ISSUER_ID: ""
       # TX_EDC_IAM_IATP_SKIP: "true"
     
@@ -87,9 +84,9 @@ tractusx-connector:
           - protocol     # Expone /api/v1/dsp en puerto 8084
           - management   # Expone /management en puerto 8081
         tls:
-          enabled: false
-          # TLS deshabilitado para desarrollo - evita problemas con certificados self-signed
-          secretName: ""
+          enabled: true
+          # TLS habilitado para comunicaciones seguras
+          secretName: "edc-mass-control-tls"
   
   # Data Plane
   dataplane:
@@ -112,9 +109,9 @@ tractusx-connector:
         endpoints:
           - public
         tls:
-          enabled: false
-          # TLS deshabilitado para desarrollo - evita problemas con certificados self-signed
-          secretName: ""
+          enabled: true
+          # TLS habilitado para comunicaciones seguras
+          secretName: "edc-mass-data-tls"
 
 # PostgreSQL dedicado para este EDC
 postgresql:
