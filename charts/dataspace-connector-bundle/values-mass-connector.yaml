@@ -18,7 +18,7 @@
 # #############################################################################
 ---
 tractusx-connector:
-  nameOverride: mondragonassembly-connector-1-edc
+  nameOverride: mass-edc
   participant:
     id: BPNL00000000MASS
   iatp:
@@ -42,7 +42,7 @@ tractusx-connector:
         url: https://ssi-dim-wallet-stub.51.178.94.25.nip.io/api/v1/directory
     endpoints:
       management:
-        authKey: TEST1
+        authKey: mass-api-key-change-in-production
     ingresses:
       - enabled: true
         hostname: "edc-mass-control.51.178.94.25.nip.io"
@@ -74,22 +74,30 @@ tractusx-connector:
       verifier:
         publickey_alias: tokenSignerPublicKey
   postgresql:
-    nameOverride: mondragonassembly-connector-1-db
-    jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-mondragonassembly-connector-1-db:5432/edc"
+    nameOverride: postgresql
+    jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/edc"
     auth:
       password: "dbpassworddataconsumerone"
       postgresPassword: "dbpassworddataconsumerone"
   vault:
     hashicorp:
-      url: http://edc-mondragonassembly-connector-1-vault:8200
+      url: http://{{ .Release.Name }}-vault:8200
     secretNames:
       transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
       transferProxyTokenSignerPublicKey: tokenSignerPublicKey
       transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
 
 vault:
-  nameOverride: edc-mondragonassembly-connector-1-vault
-  fullnameOverride: edc-mondragonassembly-connector-1-vault
+  nameOverride: vault
+  fullnameOverride: ""
   enabled: true
   server:
     postStart: []
+
+postgresql:
+  enabled: true
+  auth:
+    database: "edc"
+    username: "user"
+    password: "dbpassworddataconsumerone"
+    postgresPassword: "dbpassworddataconsumerone"

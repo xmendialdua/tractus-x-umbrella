@@ -37,7 +37,7 @@ kubectl label namespace mass-connector name=mass-connector --overwrite
 echo -e "\n${YELLOW}[3/4] Desplegando EDC para MondragonAssembly...${NC}"
 helm upgrade --install mass-edc ./charts/dataspace-connector-bundle \
   --namespace mass-connector \
-  --values /home/xmendialdua/projects/assembly/tractus-x-umbrella/charts/values-mass-connector.yaml \
+  --values ./charts/dataspace-connector-bundle/values-mass-connector.yaml \
   --timeout 15m \
   --wait
 
