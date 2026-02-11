@@ -61,9 +61,10 @@ tractusx-connector:
     env:
       # Usar proxy interceptor que agrega VCs faltantes
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      # SEGURIDAD HABILITADA: Forzar HTTPS en JSON-LD
-      EDC_JSONLD_HTTPS_ENFORCE: "true"
-      # SEGURIDAD HABILITADA: Validación IATP activa para autenticación DSP
+      # SEGURIDAD HÍBRIDA: Permitir HTTP en comunicaciones internas del cluster
+      # TLS está habilitado en los ingress externos para conexiones HTTPS públicas
+      EDC_JSONLD_HTTPS_ENFORCE: "false"
+      # Validación IATP activa para autenticación DSP
       # Las siguientes líneas están comentadas para mantener la seguridad activa
       # EDC_IAM_ISSUER_ID: ""
       # TX_EDC_IAM_IATP_SKIP: "true"
