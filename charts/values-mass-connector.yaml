@@ -35,18 +35,17 @@ tractusx-connector:
       database: "edc"
   
   # IATP: Identity and Trust Protocol
+  # Configuración según portal Catena-X
   iatp:
     id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS
     trustedIssuers:
-      # Confiamos en credenciales emitidas por CX-Operator y el consumer IKLN
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN
     sts:
       dim:
-        # Usar proxy interceptor que agrega VCs faltantes
-        url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api/sts
+        url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api/sts
       oauth:
-        token_url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/oauth/token
+        token_url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/oauth/token
         client:
           id: "BPNL00000000MASS"
           secret_alias: "client-secret"
@@ -59,15 +58,13 @@ tractusx-connector:
         authKey: "mass-api-key-change-in-production"
     
     env:
-      # Usar proxy interceptor que agrega VCs faltantes
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      # Usar DIM Wallet Stub directamente
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
       # SEGURIDAD HÍBRIDA: Permitir HTTP en comunicaciones internas del cluster
       # TLS está habilitado en los ingress externos para conexiones HTTPS públicas
       EDC_JSONLD_HTTPS_ENFORCE: "false"
-      # BYPASS TEMPORAL: Deshabilitar validación IATP para permitir consultas de catálogo
-      # Esto hace que los mensajes DSP no requieran SI tokens
-      EDC_IAM_ISSUER_ID: ""
-      TX_EDC_IAM_IATP_SKIP: "true"
+      # IATP habilitado para validación de credenciales verificables
+      # TX_EDC_IAM_IATP_SKIP está deshabilitado para usar autenticación completa
     
     # Configuración BDRS
     bdrs:
@@ -92,8 +89,8 @@ tractusx-connector:
   # Data Plane
   dataplane:
     env:
-      # Usar proxy interceptor que agrega VCs faltantes
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      # Usar DIM Wallet Stub directamente
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
     
     # Configuración de token signing
     token:
