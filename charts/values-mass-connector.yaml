@@ -50,6 +50,14 @@ mondragonassembly-connector-1:
         management:
           authKey: TEST1
       ingresses:
+        # Deshabilitar el ingress de ejemplo del chart (posición [0])
+        # El chart tractusx-dev/dataspace-connector-bundle tiene por defecto un ingress
+        # con hostname "example-controlplane.tx.test" que genera conflictos si múltiples
+        # conectores intentan crearlo. Por eso lo deshabilitamos explícitamente aquí.
+        - enabled: false
+        # Configuración personalizada del ingress para MASS (posición [1])
+          hostname: "disabled"
+          endpoints: []
         - enabled: true
           hostname: "edc-mass-control.51.178.94.25.nip.io"
           endpoints:
@@ -59,12 +67,18 @@ mondragonassembly-connector-1:
           className: "nginx"
           tls:
             enabled: true
-            secretName: "control-plane-mass-connector1"
+            secretName: "edc-mass-control-tls"
     dataplane:
       env:
         TX_IAM_IATP_CREDENTIALSERVICE_URL: https://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
         EDC_IAM_DID_WEB_USE_HTTPS: false
       ingresses:
+        # Deshabilitar el ingress de ejemplo del chart (posición [0])
+        # El chart tiene por defecto un ingress con hostname "example-dataplane.tx.test"
+        - enabled: false
+        # Configuración personalizada del ingress para MASS (posición [1])
+          hostname: "disabled"
+          endpoints: []
         - enabled: true
           hostname: "edc-mass-data.51.178.94.25.nip.io"
           endpoints:
@@ -73,7 +87,7 @@ mondragonassembly-connector-1:
           className: "nginx"
           tls:
             enabled: true
-            secretName: "data-plane-mass-connector1"
+            secretName: "edc-mass-data-tls"
       token:
         signer:
           privatekey_alias: tokenSignerPrivateKey
