@@ -14,6 +14,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+NAMESPACE="umbrella"
+
 echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}Despliegue EDC MondragonAssembly${NC}"
 echo -e "${GREEN}============================================${NC}"
@@ -27,16 +29,16 @@ helm repo add tractusx-dev https://eclipse-tractusx.github.io/charts/dev
 helm repo update
 
 # Crear namespace para MondragonAssembly
-echo -e "\n${YELLOW}[2/4] Creando namespace mass-connector...${NC}"
-kubectl create namespace mass-connector --dry-run=client -o yaml | kubectl apply -f -
+echo -e "\n${YELLOW}[2/4] Creando namespace ${NAMESPACE}...${NC}"
+kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
 # Etiquetar el namespace (útil para NetworkPolicies)
-kubectl label namespace mass-connector name=mass-connector --overwrite
+kubectl label namespace ${NAMESPACE} name=mass-connector --overwrite
 
 # Desplegar EDC MondragonAssembly
 echo -e "\n${YELLOW}[3/4] Desplegando EDC para MondragonAssembly...${NC}"
 helm upgrade --install mass-edc ./charts/dataspace-connector-bundle \
-  --namespace mass-connector \
+  --namespace ${NAMESPACE} \
   --values ./charts/dataspace-connector-bundle/values-mass-connector.yaml \
   --timeout 15m \
   --wait
@@ -44,13 +46,13 @@ helm upgrade --install mass-edc ./charts/dataspace-connector-bundle \
 # Verificar despliegue
 echo -e "\n${YELLOW}[4/4] Verificando despliegue...${NC}"
 echo -e "\n${GREEN}=== Pods ===${NC}"
-kubectl get pods -n mass-connector
+kubectl get pods -n ${NAMESPACE}
 
 echo -e "\n${GREEN}=== Servicios ===${NC}"
-kubectl get svc -n mass-connector
+kubectl get svc -n ${NAMESPACE}
 
 echo -e "\n${GREEN}=== Ingress ===${NC}"
-kubectl get ingress -n mass-connector
+kubectl get ingress -n ${NAMESPACE}
 
 echo -e "\n${GREEN}============================================${NC}"
 echo -e "${GREEN}✅ Despliegue completado${NC}"
@@ -65,8 +67,8 @@ echo -e "curl -k https://edc-mass-control.51.178.94.25.nip.io/api/check/health"
 echo -e "(Usar -k para certificados self-signed)"
 
 echo -e "\n${YELLOW}Ver logs:${NC}"
-echo -e "kubectl logs -n mass-connector -l app.kubernetes.io/component=controlplane -f"
+echo -e "kubectl logs -n ${NAMESPACE} -l app.kubernetes.io/component=controlplane -f"
 
 echo -e "\n${YELLOW}Para eliminar:${NC}"
-echo -e "helm uninstall mass-edc -n mass-connector"
-echo -e "kubectl delete namespace mass-connector"
+echo -e "helm uninstall mass-edc -n ${NAMESPACE}"
+echo -e "kubectl delete namespace ${NAMESPACE}"
