@@ -22,6 +22,29 @@ tractusx-connector:
   nameOverride: ikln-edc
   participant:
     id: BPNL00000002IKLN
+  customCaCerts:
+    tractus-x-ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDZjCCAk6gAwIBAgIQQ1Ar6jsciDa8xi9p5lJI5jANBgkqhkiG9w0BAQsFADBN
+      MQswCQYDVQQGEwJERTETMBEGA1UECBMKU29tZS1TdGF0ZTELMAkGA1UEChMCQ1gx
+      HDAaBgNVBAMTEzUxLjE3OC45NC4yNS5uaXAuaW8wHhcNMjYwMjEzMTExODEzWhcN
+      MjYwNTE0MTExODEzWjBNMQswCQYDVQQGEwJERTETMBEGA1UECBMKU29tZS1TdGF0
+      ZTELMAkGA1UEChMCQ1gxHDAaBgNVBAMTEzUxLjE3OC45NC4yNS5uaXAuaW8wggEi
+      MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIJG+ehEIqnF/Q0DvqLtbDY2Uc
+      UYo/fOObpGBXWoUx5+H9EsMkg5xJLrpl5jPdj/RGODFYlLiuYNYC8hjzUq1dy9BE
+      7cj5EPZqDq0XbrDYYOy01hQXP+/M87wAJnx5AOeFs/8kdbRB0CAwIxzJwFHKpDoe
+      oiWtcMsqbxFk0odU0yNBgcKl/KuMQg6vc13pBR5PtQ/aFkwP0ZVEhXtVfDULkIu9
+      YEndMATjGNDP4M06MFpMzNXMKqp2+WuJ5l0dvdx2EUuR8koYALF1/GgujIQcKwBi
+      pE1hPeE/RfZhR16gRJ08+8RoyceG+OTxiMpr7PXKzXc+ukk1xyuv9MR/cpNHAgMB
+      AAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
+      BBTko6abcqexErAVKJEB0ysBxxRIGzANBgkqhkiG9w0BAQsFAAOCAQEAlLSzDqmR
+      SvutZg1JUDbsVYsWWN00XWetF4Fr/vkbOp0uE3X3HattTVLnlkcCMFVeZoXixrAs
+      feh+0FsdkhmAYHANvq8xKc5fbec6L+We/o9bpm/tvJc7ltU/lp6rbzGCpgGsySl/
+      jo9D5tyBMrw2TrwmudU8Sso6w6Kn4c6VosV9ue3PCBrmp0qctitbDXLUyYRWPvX5
+      DMoZAHrslVIsRUWbMyrEHRgtvCVXkHK1L/gUNoqgJ4Ktfy1XUuEIAKsn7FWduu+v
+      Xts6ixbTdQ889ZjyYhyq0DR28vJqPK5KfBZu+CddNfnIm0qU0W2BeqNh5HWxRRes
+      BrqG67ox2NSS5A==
+      -----END CERTIFICATE-----
   iatp:
     id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN
     trustedIssuers:
@@ -38,43 +61,12 @@ tractusx-connector:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
-      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustStore=/tmp/truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     bdrs:
       server:
         url: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
     endpoints:
       management:
         authKey: ikln-api-key-change-in-production
-    initContainers:
-      - name: import-ca-cert
-        image: eclipse-temurin:17-jre-alpine
-        command:
-          - sh
-          - -c
-          - |
-            cp $JAVA_HOME/lib/security/cacerts /tmp/truststore/cacerts
-            chmod 644 /tmp/truststore/cacerts
-            keytool -importcert -noprompt -trustcacerts \
-              -alias tractus-x-ca \
-              -file /tmp/ca-certificates/ca.crt \
-              -keystore /tmp/truststore/cacerts \
-              -storepass changeit
-        volumeMounts:
-          - name: ca-cert
-            mountPath: /tmp/ca-certificates
-            readOnly: true
-          - name: truststore
-            mountPath: /tmp/truststore
-    extraVolumes:
-      - name: ca-cert
-        configMap:
-          name: edc-ca-cert
-      - name: truststore
-        emptyDir: {}
-    extraVolumeMounts:
-      - name: truststore
-        mountPath: /tmp/truststore
-        readOnly: true
     ingresses:
       - enabled: true
         hostname: "edc-ikln-control.51.178.94.25.nip.io"
@@ -90,37 +82,6 @@ tractusx-connector:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
-      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustStore=/tmp/truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
-    initContainers:
-      - name: import-ca-cert
-        image: eclipse-temurin:17-jre-alpine
-        command:
-          - sh
-          - -c
-          - |
-            cp $JAVA_HOME/lib/security/cacerts /tmp/truststore/cacerts
-            chmod 644 /tmp/truststore/cacerts
-            keytool -importcert -noprompt -trustcacerts \
-              -alias tractus-x-ca \
-              -file /tmp/ca-certificates/ca.crt \
-              -keystore /tmp/truststore/cacerts \
-              -storepass changeit
-        volumeMounts:
-          - name: ca-cert
-            mountPath: /tmp/ca-certificates
-            readOnly: true
-          - name: truststore
-            mountPath: /tmp/truststore
-    extraVolumes:
-      - name: ca-cert
-        configMap:
-          name: edc-ca-cert
-      - name: truststore
-        emptyDir: {}
-    extraVolumeMounts:
-      - name: truststore
-        mountPath: /tmp/truststore
-        readOnly: true
     ingresses:
       - enabled: true
         hostname: "edc-ikln-data.51.178.94.25.nip.io"

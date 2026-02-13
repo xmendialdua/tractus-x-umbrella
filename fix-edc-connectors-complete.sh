@@ -18,11 +18,11 @@ echo "📦 PASO 1/3: Configurando secretos en Vault"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 ./fix-edc-connector-vaults.sh
 
-# Paso 2: Configurar trust store con certificado CA
+# Paso 2: Crear trust store Java con certificado CA
 echo ""
-echo "🔐 PASO 2/3: Configurando trust store con certificado CA"
+echo "🔐 PASO 2/3: Creando trust store Java con certificado CA"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-./fix-edc-connector-ssl-trust.sh
+./create-java-truststore.sh
 
 # Paso 3: Redesplegar conectores
 echo ""
