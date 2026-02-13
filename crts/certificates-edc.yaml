@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: edc-mass-control-tls
-  namespace: mass-connector
+  namespace: umbrella
 spec:
   secretName: edc-mass-control-tls
   duration: 2160h # 90d
@@ -14,14 +14,14 @@ spec:
   dnsNames:
     - edc-mass-control.51.178.94.25.nip.io
   issuerRef:
-    name: umbrella-ca-issuer
+    name: my-ca-issuer
     kind: ClusterIssuer
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: edc-mass-data-tls
-  namespace: mass-connector
+  namespace: umbrella
 spec:
   secretName: edc-mass-data-tls
   duration: 2160h # 90d
@@ -33,14 +33,14 @@ spec:
   dnsNames:
     - edc-mass-data.51.178.94.25.nip.io
   issuerRef:
-    name: umbrella-ca-issuer
+    name: my-ca-issuer
     kind: ClusterIssuer
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: edc-ikln-control-tls
-  namespace: ikln-connector
+  namespace: umbrella
 spec:
   secretName: edc-ikln-control-tls
   duration: 2160h # 90d
@@ -52,14 +52,14 @@ spec:
   dnsNames:
     - edc-ikln-control.51.178.94.25.nip.io
   issuerRef:
-    name: umbrella-ca-issuer
+    name: my-ca-issuer
     kind: ClusterIssuer
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: edc-ikln-data-tls
-  namespace: ikln-connector
+  namespace: umbrella
 spec:
   secretName: edc-ikln-data-tls
   duration: 2160h # 90d
@@ -71,5 +71,5 @@ spec:
   dnsNames:
     - edc-ikln-data.51.178.94.25.nip.io
   issuerRef:
-    name: umbrella-ca-issuer
+    name: my-ca-issuer
     kind: ClusterIssuer
