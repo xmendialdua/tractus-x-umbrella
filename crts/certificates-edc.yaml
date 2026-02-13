@@ -1,0 +1,75 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-mass-control-tls
+  namespace: mass-connector
+spec:
+  secretName: edc-mass-control-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-mass-control.51.178.94.25.nip.io
+  dnsNames:
+    - edc-mass-control.51.178.94.25.nip.io
+  issuerRef:
+    name: umbrella-ca-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-mass-data-tls
+  namespace: mass-connector
+spec:
+  secretName: edc-mass-data-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-mass-data.51.178.94.25.nip.io
+  dnsNames:
+    - edc-mass-data.51.178.94.25.nip.io
+  issuerRef:
+    name: umbrella-ca-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-ikln-control-tls
+  namespace: ikln-connector
+spec:
+  secretName: edc-ikln-control-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-ikln-control.51.178.94.25.nip.io
+  dnsNames:
+    - edc-ikln-control.51.178.94.25.nip.io
+  issuerRef:
+    name: umbrella-ca-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-ikln-data-tls
+  namespace: ikln-connector
+spec:
+  secretName: edc-ikln-data-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-ikln-data.51.178.94.25.nip.io
+  dnsNames:
+    - edc-ikln-data.51.178.94.25.nip.io
+  issuerRef:
+    name: umbrella-ca-issuer
+    kind: ClusterIssuer

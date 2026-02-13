@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Print a warning about disabling Kubernetes ingress
-echo "Warning: Kubernetes ingress must be disabled to avoid conflicts with Certbot's standalone server."
+#echo "Warning: Kubernetes ingress must be disabled to avoid conflicts with Certbot's standalone server."
 
 # Disable Kubernetes ingress
-echo "Disabling Kubernetes ingress..."
-microk8s disable ingress
+#echo "Disabling Kubernetes ingress..."
+#microk8s disable ingress
 
 # Ensure ingress is disabled before proceeding
 if [ $? -ne 0 ]; then
@@ -20,7 +20,7 @@ if [ -z "$1" ]; then
 fi
 
 SUBDOMAIN=$1
-DOMAIN="dataspace-ikerlan.es"
+DOMAIN="51.178.94.25.nip.io"
 FULL_DOMAIN="${SUBDOMAIN}.${DOMAIN}"
 
 # Run certbot to create certificates for the given subdomain
