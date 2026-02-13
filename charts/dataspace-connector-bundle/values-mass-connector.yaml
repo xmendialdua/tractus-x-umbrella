@@ -37,12 +37,43 @@ tractusx-connector:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
+      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustStore=/tmp/truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     bdrs:
       server:
         url: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
     endpoints:
       management:
         authKey: mass-api-key-change-in-production
+    initContainers:
+      - name: import-ca-cert
+        image: eclipse-temurin:17-jre-alpine
+        command:
+          - sh
+          - -c
+          - |
+            cp $JAVA_HOME/lib/security/cacerts /tmp/truststore/cacerts
+            chmod 644 /tmp/truststore/cacerts
+            keytool -importcert -noprompt -trustcacerts \
+              -alias tractus-x-ca \
+              -file /tmp/ca-certificates/ca.crt \
+              -keystore /tmp/truststore/cacerts \
+              -storepass changeit
+        volumeMounts:
+          - name: ca-cert
+            mountPath: /tmp/ca-certificates
+            readOnly: true
+          - name: truststore
+            mountPath: /tmp/truststore
+    extraVolumes:
+      - name: ca-cert
+        configMap:
+          name: edc-ca-cert
+      - name: truststore
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: truststore
+        mountPath: /tmp/truststore
+        readOnly: true
     ingresses:
       - enabled: true
         hostname: "edc-mass-control.51.178.94.25.nip.io"
@@ -58,6 +89,37 @@ tractusx-connector:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
+      JAVA_TOOL_OPTIONS: "-Djavax.net.ssl.trustStore=/tmp/truststore/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
+    initContainers:
+      - name: import-ca-cert
+        image: eclipse-temurin:17-jre-alpine
+        command:
+          - sh
+          - -c
+          - |
+            cp $JAVA_HOME/lib/security/cacerts /tmp/truststore/cacerts
+            chmod 644 /tmp/truststore/cacerts
+            keytool -importcert -noprompt -trustcacerts \
+              -alias tractus-x-ca \
+              -file /tmp/ca-certificates/ca.crt \
+              -keystore /tmp/truststore/cacerts \
+              -storepass changeit
+        volumeMounts:
+          - name: ca-cert
+            mountPath: /tmp/ca-certificates
+            readOnly: true
+          - name: truststore
+            mountPath: /tmp/truststore
+    extraVolumes:
+      - name: ca-cert
+        configMap:
+          name: edc-ca-cert
+      - name: truststore
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: truststore
+        mountPath: /tmp/truststore
+        readOnly: true
     ingresses:
       - enabled: true
         hostname: "edc-mass-data.51.178.94.25.nip.io"
