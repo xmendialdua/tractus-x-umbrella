@@ -50,19 +50,22 @@ tractusx-connector:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
     sts:
       dim:
-        url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api/sts
+        url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api/sts
       oauth:
-        token_url: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/oauth/token
+        token_url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/oauth/token
         client:
           id: BPNL00000000MASS
           secret_alias: edc-wallet-secret
   controlplane:
     env:
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
+      # BDRS configuration with new property names (EDC v0.11.1+)
+      TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory
+      TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
     bdrs:
       server:
-        url: http://bdrs-server.portal.svc.cluster.local:8082/api/directory/bpn-directory
+        url: http://bdrs-server.portal:8081/api/management/bpn-directory
     endpoints:
       management:
         authKey: mass-api-key-change-in-production
@@ -79,7 +82,7 @@ tractusx-connector:
           secretName: "edc-mass-control-tls"
   dataplane:
     env:
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/api
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
       EDC_IAM_DID_WEB_USE_HTTPS: false
     ingresses:
       - enabled: true
@@ -105,17 +108,25 @@ tractusx-connector:
   vault:
     hashicorp:
       url: http://{{ .Release.Name }}-vault:8200
+      token: "root"
+      paths:
+        secret: "/v1/secret"
+        folder: ""  
     secretNames:
       transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
       transferProxyTokenSignerPublicKey: tokenSignerPublicKey
       transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
 
 vault:
-  nameOverride: vault
-  fullnameOverride: ""
   enabled: true
   server:
-    postStart: []
+    standalone:
+      enabled: true
+    dev:
+      enabled: true
+      devRootToken: "root"
+  nameOverride: vault
+  fullnameOverride: ""
 
 postgresql:
   enabled: true
@@ -124,3 +135,4 @@ postgresql:
     username: "user"
     password: "dbpassworddataconsumerone"
     postgresPassword: "dbpassworddataconsumerone"
+
