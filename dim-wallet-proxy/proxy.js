@@ -113,38 +113,67 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
       body: JSON.stringify(req.body)
     });
 
-    const data = await response.json();
-    console.log('Received DIM Wallet response, length:', JSON.stringify(data).length);
+    // DIM Wallet Stub returns a JWT string, not JSON
+    const dataText = await response.text();
+    console.log('Received DIM Wallet response, length:', dataText.length);
 
     if (!response.ok) {
-      console.error('DIM Wallet error:', response.status, data);
-      return res.status(response.status).json(data);
+      console.error('DIM Wallet error:', response.status, dataText);
+      return res.status(response.status).send(dataText);
     }
 
-    // Check if VP exists in response
-    if (data && data.vp && data.vp.verifiableCredential) {
-      const existingVCs = data.vp.verifiableCredential || [];
+    // Try to decode JWT
+    let decoded;
+    try {
+      console.log('🔍 Response starts with:', dataText.substring(0, 50) + '...');
+      
+      decoded = jwt.decode(dataText, { complete: true });
+      console.log('🔍 decoded exists:', !!decoded);
+      console.log('🔍 decoded type:', typeof decoded);
+      
+      if (decoded) {
+        console.log('🔍 decoded keys:', Object.keys(decoded).join(', '));
+      }
+      
+      if (!decoded || !decoded.payload) {
+        console.log('⚠️ JWT decoded but no payload found, forwarding as-is');
+        return res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
+      }
+      
+      console.log('✅ Successfully decoded JWT from wallet stub');
+      console.log('📋 Payload has keys:', Object.keys(decoded.payload).join(', '));
+      console.log('📋 Checking for vp structure...');
+      
+    } catch (decodeError) {
+      console.log('⚠️ Could not decode JWT:', decodeError.message);
+      return res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
+    }
+
+    // Check if VP exists in JWT payload
+    if (decoded && decoded.payload && decoded.payload.vp && decoded.payload.vp.verifiableCredential) {
+      const existingVCs = decoded.payload.vp.verifiableCredential || [];
       console.log(`Original VP contains ${existingVCs.length} credentials`);
 
-      // Extract holderIdentifier from existing VCs
+      // Extract holderIdentifier from existing VCs or BPN from payload
       const holderIdentifier = existingVCs[0]?.credentialSubject?.holderIdentifier || 
-                              req.body.scope || 
+                              decoded.payload.sub ||
+                              decoded.payload.bpn ||
                               'did:web:unknown.example.com';
       
-      // Get issuer from token or use default
-      const issuerDid = data.iss || 'did:web:dim.example.com';
+      // Get issuer from token 
+      const issuerDid = decoded.payload.iss || 'did:web:dim.example.com';
 
-      console.log(`Adding FrameworkAgreement and UsagePurpose VCs for holder: ${holderIdentifier}`);
+      console.log(`✨ Adding FrameworkAgreement and UsagePurpose VCs for holder: ${holderIdentifier}`);
 
       // Create additional VCs
       const frameworkVC = createFrameworkAgreementVC(holderIdentifier, issuerDid);
       const usagePurposeVC = createUsagePurposeVC(holderIdentifier, issuerDid);
 
       // Enhance the VP with additional credentials
-      const enhancedData = {
-        ...data,
+      const enhancedPayload = {
+        ...decoded.payload,
         vp: {
-          ...data.vp,
+          ...decoded.payload.vp,
           verifiableCredential: [
             ...existingVCs,
             frameworkVC,
@@ -153,16 +182,25 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
         }
       };
 
-      console.log(`Enhanced VP now contains ${enhancedData.vp.verifiableCredential.length} credentials`);
-      return res.json(enhancedData);
+      console.log(`✅ Enhanced VP now contains ${enhancedPayload.vp.verifiableCredential.length} credentials`);
+
+      // Re-sign the JWT with enhanced payload
+      // NOTE: Using 'dev-secret' for development only - in production use proper key management
+      const enhancedJWT = jwt.sign(enhancedPayload, 'dev-secret', { 
+        algorithm: 'HS256',
+        header: decoded.header 
+      });
+
+      console.log('✅ Re-signed JWT with enhanced VCs');
+      return res.setHeader('Content-Type', 'text/plain').send(enhancedJWT);
     }
 
-    // If no VP structure, forward as-is
-    console.log('No VP structure found, forwarding response as-is');
-    res.json(data);
+    // If no VP structure found, forward as-is
+    console.log('⚠️ No VP structure found in JWT, forwarding as-is');
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
 
   } catch (error) {
-    console.error('Error in presentations/query proxy:', error);
+    console.error('❌ Error in presentations/query proxy:', error);
     res.status(500).json({ error: 'Proxy error', details: error.message });
   }
 });
