@@ -113,7 +113,7 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
       body: JSON.stringify(req.body)
     });
 
-    // DIM Wallet Stub returns a JWT string, not JSON
+    // DIM Wallet Stub returns JSON with JWT inside
     const dataText = await response.text();
     console.log('Received DIM Wallet response, length:', dataText.length);
 
@@ -122,82 +122,15 @@ app.use('/api/presentations/query', express.json(), async (req, res) => {
       return res.status(response.status).send(dataText);
     }
 
-    // Try to decode JWT
-    let decoded;
-    try {
-      console.log('🔍 Response starts with:', dataText.substring(0, 50) + '...');
-      
-      decoded = jwt.decode(dataText, { complete: true });
-      console.log('🔍 decoded exists:', !!decoded);
-      console.log('🔍 decoded type:', typeof decoded);
-      
-      if (decoded) {
-        console.log('🔍 decoded keys:', Object.keys(decoded).join(', '));
-      }
-      
-      if (!decoded || !decoded.payload) {
-        console.log('⚠️ JWT decoded but no payload found, forwarding as-is');
-        return res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
-      }
-      
-      console.log('✅ Successfully decoded JWT from wallet stub');
-      console.log('📋 Payload has keys:', Object.keys(decoded.payload).join(', '));
-      console.log('📋 Checking for vp structure...');
-      
-    } catch (decodeError) {
-      console.log('⚠️ Could not decode JWT:', decodeError.message);
-      return res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
-    }
-
-    // Check if VP exists in JWT payload
-    if (decoded && decoded.payload && decoded.payload.vp && decoded.payload.vp.verifiableCredential) {
-      const existingVCs = decoded.payload.vp.verifiableCredential || [];
-      console.log(`Original VP contains ${existingVCs.length} credentials`);
-
-      // Extract holderIdentifier from existing VCs or BPN from payload
-      const holderIdentifier = existingVCs[0]?.credentialSubject?.holderIdentifier || 
-                              decoded.payload.sub ||
-                              decoded.payload.bpn ||
-                              'did:web:unknown.example.com';
-      
-      // Get issuer from token 
-      const issuerDid = decoded.payload.iss || 'did:web:dim.example.com';
-
-      console.log(`✨ Adding FrameworkAgreement and UsagePurpose VCs for holder: ${holderIdentifier}`);
-
-      // Create additional VCs
-      const frameworkVC = createFrameworkAgreementVC(holderIdentifier, issuerDid);
-      const usagePurposeVC = createUsagePurposeVC(holderIdentifier, issuerDid);
-
-      // Enhance the VP with additional credentials
-      const enhancedPayload = {
-        ...decoded.payload,
-        vp: {
-          ...decoded.payload.vp,
-          verifiableCredential: [
-            ...existingVCs,
-            frameworkVC,
-            usagePurposeVC
-          ]
-        }
-      };
-
-      console.log(`✅ Enhanced VP now contains ${enhancedPayload.vp.verifiableCredential.length} credentials`);
-
-      // Re-sign the JWT with enhanced payload
-      // NOTE: Using 'dev-secret' for development only - in production use proper key management
-      const enhancedJWT = jwt.sign(enhancedPayload, 'dev-secret', { 
-        algorithm: 'HS256',
-        header: decoded.header 
-      });
-
-      console.log('✅ Re-signed JWT with enhanced VCs');
-      return res.setHeader('Content-Type', 'text/plain').send(enhancedJWT);
-    }
-
-    // If no VP structure found, forward as-is
-    console.log('⚠️ No VP structure found in JWT, forwarding as-is');
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'text/plain').send(dataText);
+    // With REQUEST enhancement strategy, the STS token already contains all 3 credential types
+    // (MembershipCredential, FrameworkAgreementCredential, UsagePurposeCredential)
+    // The presentations/query response only returns VCs for the requested scope
+    // We don't need to modify this response - just forward it as-is
+    
+    console.log('✅ Using REQUEST enhancement strategy - STS token already has all credentials');
+    console.log('✅ Forwarding presentations/query response without modification');
+    
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json').send(dataText);
 
   } catch (error) {
     console.error('❌ Error in presentations/query proxy:', error);
