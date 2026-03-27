@@ -50,16 +50,16 @@ tractusx-connector:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
     sts:
       dim:
-        url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api/sts
+        url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api/sts
       oauth:
-        token_url: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/oauth/token
+        token_url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/oauth/token
         client:
           id: BPNL00000000MASS
           secret_alias: edc-wallet-secret
   controlplane:
     env:
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
-      EDC_IAM_DID_WEB_USE_HTTPS: false
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      EDC_IAM_DID_WEB_USE_HTTPS: true
       # BDRS configuration with new property names (EDC v0.11.1+)
       TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
       TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
@@ -82,8 +82,8 @@ tractusx-connector:
           secretName: "edc-mass-control-tls"
   dataplane:
     env:
-      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://ssi-dim-wallet-stub.51.178.94.25.nip.io/api
-      EDC_IAM_DID_WEB_USE_HTTPS: false
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      EDC_IAM_DID_WEB_USE_HTTPS: true
     ingresses:
       - enabled: true
         hostname: "edc-mass-data.51.178.94.25.nip.io"
