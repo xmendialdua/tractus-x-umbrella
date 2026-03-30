@@ -38,9 +38,9 @@ resource "ovh_cloud_project_kube_nodepool" "node_pool" {
   kube_id       = ovh_cloud_project_kube.my_kube_cluster.id
   name          = "tractus-x-umbrella"  # Nombre del pool
   flavor_name   = "b3-16"     # Tipo de nodo B3-16 (Nueva Generación - Mejor rendimiento)
-  desired_nodes = 3      # 3 nodos para el portal
-  max_nodes     = 3
-  min_nodes     = 3
+  desired_nodes = 2      # 2 nodos para el portal
+  max_nodes     = 2
+  min_nodes     = 2
 }
 
 # 5. Generar automáticamente el archivo kubeconfig.yaml
