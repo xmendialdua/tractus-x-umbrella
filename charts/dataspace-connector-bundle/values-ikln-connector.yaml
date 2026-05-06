@@ -59,10 +59,11 @@ tractusx-connector:
   controlplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      EDC_IAM_DID_WEB_USE_HTTPS: true
+      EDC_IAM_DID_WEB_USE_HTTPS: false
       # BDRS configuration with new property names (EDC v0.11.1+)
       TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
       TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
+      EDC_IAM_STS_OAUTH_TOKEN_SIGNING_ALGORITHM: "ES256K"
     bdrs:
       server:
         url: http://bdrs-server.portal:8082/api/directory
@@ -83,7 +84,10 @@ tractusx-connector:
   dataplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      EDC_IAM_DID_WEB_USE_HTTPS: true
+      EDC_IAM_DID_WEB_USE_HTTPS: false
+      EDC_DATAPLANE_TOKEN_SIGNING_ALGORITHM: "ES256K"
+      EDC_TRANSFER_PROXY_TOKEN_SIGNER_PRIVATEKEY_ALIAS: "tokenSignerPrivateKey"
+      EDC_TRANSFER_PROXY_TOKEN_VERIFIER_PUBLICKEY_ALIAS: "tokenSignerPublicKey"
     ingresses:
       - enabled: true
         hostname: "edc-ikln-data.51.178.94.25.nip.io"
