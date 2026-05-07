@@ -1,0 +1,2000 @@
+
+Accede al dashboard:
+http://localhost:3000
+Usuario: admin / Contraseña: admin
+
+El dashboard debería mostrar ahora los intervalos:
+500ms, 1s, 5s, 10s, 30s, 1m, 5m, etc."
+docker exec postgres psql -U iot_user -d iot_db -c "SELECT sensor_id, is_anomaly, COUNT(*) as total FROM fact_events GROUP BY sensor_id, is_anomaly ORDER BY sensor_id, is_anomaly;"
+docker-compose stop grafana && docker-compose up -d grafana && sleep 8 && docker logs grafana --tail=20 2>&1 | grep -i "dashboard\|refresh"
+docker rm -f grafana && docker-compose up -d grafana && sleep 8 && docker logs grafana --tail=20 2>&1 | grep -i "dashboard\|refresh"
+docker ps -a | grep grafana
+docker rm 14a7086bd19d && docker-compose up -d grafana
+sleep 10 && docker logs grafana --tail=25 2>&1 | grep -E "dashboard|refresh|provision"
+docker exec postgres psql -U postgres -d iot_db -c "SELECT sensor_id, is_anomaly, COUNT(*) as total FROM fact_events GROUP BY sensor_id, is_anomaly ORDER BY sensor_id, is_anomaly;"
+docker exec postgres psql -U spark -d iot_db -c "SELECT sensor_id, is_anomaly, COUNT(*) as total FROM fact_events GROUP BY sensor_id, is_anomaly ORDER BY sensor_id, is_anomaly LIMIT 20;"
+docker exec postgres psql -U spark -d iot_warehouse -c "SELECT sensor_id, is_anomaly, COUNT(*) as total FROM fact_events GROUP BY sensor_id, is_anomaly ORDER BY sensor_id, is_anomaly;"
+docker exec postgres psql -U spark -d iot_warehouse -c "SELECT sensor_id, TO_CHAR(event_timestamp, 'HH24:MI:SS.MS') as tiempo, temperature, is_anomaly, CASE WHEN is_anomaly THEN '⚠' ELSE '✓' END as anom FROM fact_events WHERE sensor_id = 'SENSOR_001' ORDER BY event_timestamp DESC LIMIT 10;"
+cat /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json | grep -A 3 '"anom"' | head -20
+cat /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json | grep -A 15 'matcher.*anom' | head -50
+sed -n '183,186p' /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json | cat -A
+cd /home/xmendialdua/training/spark && python3 << 'EOF'
+import json
+
+# Leer el dashboard
+with open('grafana/dashboards/iot_dashboard.json', 'r', encoding='utf-8') as f:
+    dashboard = json.load(f)
+
+# Incrementar versión
+dashboard['version'] = 7
+
+# Configuración correcta de mappings
+correct_mappings = {
+    "id": "mappings",
+    "value": [
+        {
+            "type": "value",
+            "options": {
+                "⚠": {
+                    "text": "⚠",
+                    "color": "orange",
+                    "index": 0
+                },
+                "✓": {
+                    "text": "✓",
+                    "color": "green",
+                    "index": 1
+                }
+            }
+        }
+    ]
+}
+
+# Actualizar cada panel de tabla (ids 10, 11, 12, 13, 14)
+for panel in dashboard['panels']:
+    if panel.get('type') == 'table' and panel.get('id') in [10, 11, 12, 13, 14]:
+        # Buscar el override para la columna 'anom'
+        overrides = panel['fieldConfig']['overrides']
+        for override in overrides:
+            if override.get('matcher', {}).get('options') == 'anom':
+                # Actualizar displayMode y mappings
+                for prop in override['properties']:
+                    if prop['id'] == 'custom.displayMode':
+                        prop['value'] = 'color-background-solid'
+                    elif prop['id'] == 'mappings':
+                        override['properties'] = [
+                            {"id": "custom.displayMode", "value": "color-background-solid"},
+                            {"id": "custom.width", "value": 35},
+                            correct_mappings
+                        ]
+                        break
+
+# Guardar el dashboard actualizado
+with open('grafana/dashboards/iot_dashboard.json', 'w', encoding='utf-8') as f:
+    json.dump(dashboard, f, ensure_ascii=False, indent=2)
+
+print("✅ Dashboard actualizado: todos los sensores con mappings correctos (versión 7)")
+EOF
+
+grep -A 15 'matcher.*anom' /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json | grep -E '"displayMode"|"color"' | head -20
+python3 << 'EOF'
+import json
+
+with open('/home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json', 'r') as f:
+    dashboard = json.load(f)
+
+print(f"Versión del dashboard: {dashboard['version']}")
+print(f"\nTotal de paneles: {len(dashboard['panels'])}")
+
+# Verificar los paneles de sensores (ids 10-14)
+for panel in dashboard['panels']:
+    if panel.get('type') == 'table' and panel.get('id') in [10, 11, 12, 13, 14]:
+        print(f"\nPanel {panel['id']} - {panel['title']}:")
+        overrides = panel['fieldConfig']['overrides']
+        for override in overrides:
+            if override.get('matcher', {}).get('options') == 'anom':
+                print(f"  Overrides encontrados: {len(override['properties'])} propiedades")
+                for prop in override['properties']:
+                    if prop['id'] == 'custom.displayMode':
+                        print(f"    - displayMode: {prop['value']}")
+                    elif prop['id'] == 'mappings':
+                        mappings = prop['value'][0] if prop['value'] else {}
+                        if 'options' in mappings:
+                            print(f"    - mappings: formato correcto con options")
+                            print(f"      ⚠ color: {mappings['options'].get('⚠', {}).get('color', 'N/A')}")
+                            print(f"      ✓ color: {mappings['options'].get('✓', {}).get('color', 'N/A')}")
+                        else:
+                            print(f"    - mappings: formato antiguo")
+EOF
+
+docker exec grafana printenv | grep -i refresh
+cd /home/xmendialdua/training/spark && python3 << 'EOF'
+import json
+
+with open('grafana/dashboards/iot_dashboard.json', 'r', encoding='utf-8') as f:
+    dashboard = json.load(f)
+
+# Cambiar refresh a 1s
+dashboard['refresh'] = '1s'
+
+# Ajustar los intervalos del timepicker para que 1s sea la opción más rápida
+dashboard['timepicker']['refresh_intervals'] = [
+    '1s',
+    '5s',
+    '10s',
+    '30s',
+    '1m',
+    '5m',
+    '15m',
+    '30m',
+    '1h',
+    '2h',
+    '1d'
+]
+
+# Incrementar versión
+dashboard['version'] = 8
+
+with open('grafana/dashboards/iot_dashboard.json', 'w', encoding='utf-8') as f:
+    json.dump(dashboard, f, ensure_ascii=False, indent=2)
+
+print(f"✅ Dashboard actualizado:")
+print(f"   - Refresh interval: {dashboard['refresh']}")
+print(f"   - Versión: {dashboard['version']}")
+print(f"   - Intervalos disponibles: {', '.join(dashboard['timepicker']['refresh_intervals'][:5])}...")
+EOF
+
+docker logs grafana 2>&1 | grep -i "refresh\|interval\|minimum" | tail -10
+docker exec grafana cat /etc/grafana/grafana.ini | grep -A 5 -B 5 "min_refresh"
+grep -i "minrefresh" /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json
+docker stop grafana && docker rm grafana && docker-compose up -d grafana && sleep 10 && docker logs grafana --tail=30 | grep -E "min_refresh|Config override"
+docker logs grafana 2>&1 | tail -40
+docker logs grafana 2>&1 | grep -i "dashboard\|provision" | tail -10
+docker exec grafana cat /etc/grafana/grafana.ini 2>&1 | head -20
+rm /home/xmendialdua/training/spark/grafana/grafana.ini
+docker stop grafana && docker rm grafana && docker-compose up -d grafana
+sleep 8 && docker logs grafana 2>&1 | grep -E "refresh|Config override|min" | tail -15
+docker logs grafana 2>&1 | grep "GF_DASHBOARDS"
+cd /home/xmendialdua/training/spark && python3 << 'EOF'
+import json
+from datetime import datetime
+
+with open('grafana/dashboards/iot_dashboard.json', 'r', encoding='utf-8') as f:
+    dashboard = json.load(f)
+
+# Buscar el panel "Sensores activos"
+for panel in dashboard['panels']:
+    if 'Sensores activos' in panel.get('title', ''):
+        print(f"Panel 'Sensores activos' encontrado:")
+        print(f"  - id: {panel['id']}")
+        print(f"  - gridPos: {panel['gridPos']}")
+
+# Crear panel de reloj
+clock_panel = {
+    "id": 15,
+    "type": "text",
+    "title": "Reloj de Actualización",
+    "gridPos": {"h": 3, "w": 3, "x": 21, "y": 0},
+    "options": {
+        "mode": "html",
+        "content": """<div style="text-align: center; padding: 10px;">
+  <div style="font-size: 24px; font-weight: bold; color: #00ff00; font-family: monospace;" id="clock">--:--:--</div>
+  <div style="font-size: 12px; margin-top: 5px;">Última actualización</div>
+</div>
+
+<script>
+function updateClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = hours + ':' + minutes + ':' + seconds;
+}
+setInterval(updateClock, 100);
+updateClock();
+</script>"""
+    }
+}
+
+# Agregar el panel de reloj
+dashboard['panels'].append(clock_panel)
+
+# Incrementar versión
+dashboard['version'] = 9
+
+with open('grafana/dashboards/iot_dashboard.json', 'w', encoding='utf-8') as f:
+    json.dump(dashboard, f, ensure_ascii=False, indent=2)
+
+print(f"\n✅ Panel de reloj agregado")
+print(f"   - Posición: x=21, y=0 (esquina superior derecha)")
+print(f"   - Se actualiza cada 100ms")
+print(f"   - Versión del dashboard: {dashboard['version']}")
+EOF
+
+docker logs data-generator --tail=30 2>&1 | grep -E "Datos enviados|evento" | tail -10
+find /home/xmendialdua/training/spark -name "*generator*" -type f 2>/dev/null
+docker-compose restart spark-streaming && sleep 8 && docker logs spark-streaming --tail=25
+sleep 10 && docker logs spark-streaming --tail=30 2>&1 | grep -E "Streaming job|Iniciando|processingTime|✅"
+docker logs spark-streaming --tail=50 2>&1 | grep "Batch" | tail -15
+cd /home/xmendialdua/training/spark && python3 << 'EOF'
+import json
+
+with open('grafana/dashboards/iot_dashboard.json', 'r', encoding='utf-8') as f:
+    dashboard = json.load(f)
+
+# Eliminar el panel del reloj (id=15)
+original_count = len(dashboard['panels'])
+dashboard['panels'] = [p for p in dashboard['panels'] if p.get('id') != 15]
+new_count = len(dashboard['panels'])
+
+# Añadir 500ms a los intervalos de refresh
+dashboard['timepicker']['refresh_intervals'] = [
+    '500ms',
+    '1s',
+    '5s',
+    '10s',
+    '30s',
+    '1m',
+    '5m',
+    '15m',
+    '30m',
+    '1h',
+    '2h',
+    '1d'
+]
+
+# Incrementar versión
+dashboard['version'] = 10
+
+with open('grafana/dashboards/iot_dashboard.json', 'w', encoding='utf-8') as f:
+    json.dump(dashboard, f, ensure_ascii=False, indent=2)
+
+print(f"✅ Cambios aplicados:")
+print(f"   - Panel del reloj eliminado ({original_count} → {new_count} paneles)")
+print(f"   - Intervalos de refresh: {', '.join(dashboard['timepicker']['refresh_intervals'][:5])}...")
+print(f"   - Versión del dashboard: {dashboard['version']}")
+EOF
+
+cd /home/xmendialdua/training/spark && python3 << 'EOF'
+import json
+
+with open('grafana/dashboards/iot_dashboard.json', 'r', encoding='utf-8') as f:
+    dashboard = json.load(f)
+
+# Añadir 250ms y 500ms a los intervalos de refresh
+dashboard['timepicker']['refresh_intervals'] = [
+    '250ms',
+    '500ms',
+    '1s',
+    '5s',
+    '10s',
+    '30s',
+    '1m',
+    '5m',
+    '15m',
+    '30m',
+    '1h',
+    '2h',
+    '1d'
+]
+
+# Incrementar versión
+dashboard['version'] = 11
+
+with open('grafana/dashboards/iot_dashboard.json', 'w', encoding='utf-8') as f:
+    json.dump(dashboard, f, ensure_ascii=False, indent=2)
+
+print(f"✅ Intervalos de refresh actualizados:")
+print(f"   - Opciones: {', '.join(dashboard['timepicker']['refresh_intervals'][:6])}")
+print(f"   - Versión del dashboard: {dashboard['version']}")
+EOF
+
+docker-compose restart grafana && sleep 8 && docker logs grafana 2>&1 | grep "GF_DASHBOARDS"
+docker stop grafana && docker rm grafana && docker-compose up -d grafana
+sleep 10 && docker logs grafana 2>&1 | grep "GF_DASHBOARDS"
+docker ps --filter "name=grafana" --filter "name=postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker logs grafana --tail=40 2>&1 | grep -E "error|ERROR|failed|FAILED|provision"
+grep -A 15 '"refresh_intervals"' /home/xmendialdua/training/spark/grafana/dashboards/iot_dashboard.json
+docker-compose stop grafana && docker volume rm spark_grafana-data && docker-compose up -d grafana && sleep 10 && echo "✅ Grafana reiniciado con volumen limpio"
+docker rm grafana && docker volume rm spark_grafana-data && docker-compose up -d grafana && sleep 10 && echo "✅ Grafana reiniciado con volumen limpio"
+docker logs grafana 2>&1 | tail -15
+docker-compose down
+docker ps -a --format "table {{.Names}}\t{{.Status}}" | head -15
+cd projects/
+ls
+cd ..
+ls
+mkdir training
+cd training/
+mkdir spark
+cd spark/
+vscode .
+docker --version
+docker compose version
+docker --version
+docker compose version
+git status
+git pull
+git add scripts/deploy-remote.sh 
+git add scripts/init-demo.sh 
+git add scripts/logs-demo.sh 
+git add scripts/start-demo.sh 
+git add scripts/stop-demo.sh 
+git commit -m "Modificado docker-compose"
+git pull
+git pull --rebase
+git status
+cd projects/
+cd ubikare/
+ls
+cd essad/
+ls
+git pull
+vscode .
+git status
+kubectl get pods -n edc-ui
+git status
+git remote -v
+git remote set-url origin https://github.com/xmendialdua/edc-ui-mass.git
+git remote -v
+git push -u origin main
+git remote set-url origin git@github.com:xmendialdua/edc-ui-mass.git
+git remote -v
+git push -u origin main
+git status
+git remote -v
+git commit -m "Para primer despliegue en OVH de MASS para los conectores EDC-MASS y EDC-IKL"
+git commit -m "Para primer despliegue en OVH de MASS para los conectores EDC-MASS y EDC-IKLN"
+git status
+git ui/k8s/deploy.sh
+git add ui/k8s/deploy.sh
+git add ui/k8s/deploy-ovh.sh 
+git status
+git add DESPLIEGUE_OVH.md 
+git commit -m "Eliminados botones innecesarios en edc-provider"
+cd /home/xmendialdua/projects/assembly/iflex/ui
+pnpm install      # Solo si es necesario instalar/actualizar dependencias
+pnpm dev          # Inicia el servidor de desarrollo
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && echo "✓ KUBECONFIG configurado: $KUBECONFIG" && kubectl cluster-info
+cd /home/xmendialdua/projects/assembly/iflex/ui && docker build -t xmendialdua/edc-mngmt-ui:latest -t xmendialdua/edc-mngmt-ui:1107 -f Dockerfile.k8s .
+sleep 30 && echo "Checking build status..."
+docker images xmendialdua/edc-mngmt-ui:1107
+ps aux | grep docker
+cd /home/xmendialdua/projects/assembly/iflex/ui && docker build -t xmendialdua/edc-mngmt-ui:latest -t xmendialdua/edc-mngmt-ui:1107 -f Dockerfile.k8s . 2>&1 | tee build.log
+sleep 60 && tail -20 /home/xmendialdua/projects/assembly/iflex/ui/build.log
+sleep 120 && echo "Verificando estado..."
+docker push xmendialdua/edc-mngmt-ui:latest && docker push xmendialdua/edc-mngmt-ui:1107
+echo "Esperando..." && sleep 5
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl get pods -n edc-ui
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && cd /home/xmendialdua/projects/assembly/iflex/ui && bash k8s/deploy.sh
+kubectl get pods -n edc-ui && echo "" && kubectl describe pod -n edc-ui | grep "Image:"
+cd /home/xmendialdua/projects/assembly/iflex/ui/app && cp -r edc-provider publish-data && echo "✓ Estructura copiada"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+cd projects/
+ls
+cd assembly/
+ls
+cd tractus-x-umbrella
+ls
+git status
+cd ..
+ls
+cd tractusx-edc-dashboard/
+ls
+git status
+git remote -v
+cd ..
+cd tractus-x-umbrella
+git remote -v
+vscode .
+cd projects/
+lñs
+ls
+cd assembly/
+ls
+cd iflex/
+ls
+git status
+vscode .
+git remote -v
+git status
+cd /home/xmendialdua/projects/assembly/iflex/ui
+pnpm dev
+npm run dev
+cd projects/
+ls
+cd assembly/
+ls
+iflex/
+cd iflex/
+ls
+vscode .
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get networkpolicies -n umbrella
+npm run dev
+cd /home/xmendialdua/projects/assembly/iflex/ui
+npm run dev
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get nodes -all-namespaces
+kubectl get nodes --all-namespaces
+kubectl get pods -n umbrella
+kubectl get pods -n portal
+kubectl get pods --all-namespaces
+cd dashboards
+./start.sh
+# Si pip no está instalado
+sudo apt install python3-pip
+# Instalar dependencias
+cd dashboards
+pip install -r requirements.txt
+source venv/bin/activate
+./start.sh
+./start.sh
+./start.sh
+./start.sh
+./start.sh
+curl -X POST "https://edc-mass-control.51.178.94.25.nip.io/management/v3/policydefinitions/request"   -H "Content-Type: application/json"   -H "X-API-KEY: mass-api-key-change-in-production"   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "QuerySpec",
+    "offset": 0,
+    "limit": 10
+  }'
+git remote -v
+cd projects/assembly/iflex/
+ls
+vscode .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+vscode .
+curl -X POST http://localhost:5000/api/phase5/catalog-request -H "Content-Type: application/json" -d '{}' | jq
+cd dashboards
+source venv/bin/activate
+./start.sh
+./export.sh 
+kubectl get pods -n portal
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+git status
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n portal
+kubectl get pods -n umbrella
+kubectl get pod description ikln-edc-controlplane-64cd9d6768-mrq2g -n umbrella
+kubectl get description ikln-edc-controlplane-64cd9d6768-mrq2g -n umbrella
+kubectl describe ikln-edc-controlplane-64cd9d6768-mrq2g -n umbrella
+kubectl describe pod ikln-edc-controlplane-64cd9d6768-mrq2g -n umbrella
+Defaulted container "tractusx-connector" out of: tractusx-connector, custom-cacerts (init)
+kubectl logs -n umbrella ikln-edc-controlplane-64cd9d6768-mrq2g --tail=200 | grep -E "(credentials|obtain|Empty|502|error|catalog)" -i
+kubectl logs -n umbrella ikln-edc-controlplane-64cd9d6768-mrq2g --tail=50
+http://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp/.well-known/did.json
+curl -s http://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp/.well-known/did.json
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+kubectl get pods -n portal | grep ssi-dim-wallet
+# Patch temporal de la variable de entorno (sin redesplegar todo)
+kubectl set env deployment/ikln-edc-controlplane   -n umbrella   EDC_IAM_DID_WEB_USE_HTTPS="true"
+# Esto reiniciará solo el pod del controlplane
+# Tarda ~30-60 segundos
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl set env deployment/ikln-edc-controlplane   -n umbrella   EDC_IAM_DID_WEB_USE_HTTPS="true"
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=ikln-edc,app.kubernetes.io/component=controlplane -n umbrella --timeout=120s
+curl -X POST http://localhost:5000/api/phase5/catalog-request
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=ikln-edc,app.kubernetes.io/component=controlplane -n umbrella --timeout=120s
+curl -X POST http://localhost:5000/api/phase5/catalog-request
+kubectl logs -n portal ssi-dim-wallet-stub-xxx --tail=20 | grep "providerDid"
+kubectl logs -n portal ssi-dim-wallet-stub-75bd9865cf-ntxhj --tail=20 | grep "providerDid"
+# Reiniciar BDRS para que ejecute el seeding job
+kubectl rollout restart deployment/bdrs-server -n portal
+kubectl get job bdrs-manual-seeding-sn9wk -n portal -o yaml > /tmp/bdrs-original-job.yaml
+kubectl get pod bdrs-manual-seeding-sn9wk -n portal -o yaml > /tmp/bdrs-original-pod.yaml
+cat /tmp/bdrs-original-pod.yaml | grep -A 30 "spec:"
+kubectl get job bdrs-manual-seeding -n portal
+kubectl get pod bdrs-manual-seeding-sn9wk -n portal -o yaml | head -100
+kubectl get job bdrs-manual-seeding -n portal
+kubectl create job --from=job/bdrs-manual-seeding   bdrs-reseed-$(date +%s)   -n portal
+kubectl get job bdrs-manual-seeding -n portal -o yaml > /tmp/bdrs-job-original.yaml
+cat > /tmp/bdrs-reseed.yaml <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bdrs-reseed-manual
+  namespace: portal
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-job
+        image: alpine:3.19
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          wget --header "Content-Type: application/json" --header "x-api-key: TEST" --post-data '{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header "Content-Type: application/json" --header "x-api-key: TEST" --post-data '{"bpn":"BPNL000000000065","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL000000000065"}' "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header "Content-Type: application/json" --header "x-api-key: TEST" --post-data '{"bpn":"BPNL00000000015G","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"}' "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header "Content-Type: application/json" --header "x-api-key: TEST" --post-data '{"bpn":"BPNL00000000MASS","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"}' "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header "Content-Type: application/json" --header "x-api-key: TEST" --post-data '{"bpn":"BPNL00000002IKLN","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN"}' "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+EOF
+
+kubectl apply -f /tmp/bdrs-reseed.yaml
+kubectl get job bdrs-reseed-manual -n portal
+kubectl get pods -n portal | grep bdrs-reseed
+kubectl logs -n portal -l job-name=bdrs-reseed-manual -f
+kubectl logs -n portal -l job-name=bdrs-reseed-manual -f
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000000MASS'
+kubectl logs -n portal -l job-name=bdrs-reseed-manual -f
+kubectl get job bdrs-reseed-manual -n portal
+kubectl get pods -n portal | grep bdrs-reseed
+kubectl logs -n portal -l job-name=bdrs-reseed-manual
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000000MASS'
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000002IKLN'
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000003CRHK'
+kubectl get deployment bdrs-server -n portal -o yaml | grep -A 5 "AUTH_KEY"
+kubectl exec -n portal deployment/bdrs-server -- env | grep -E "(AUTH|KEY|API)"
+kubectl get svc bdrs-server -n portal -o yaml | grep -A 10 "ports:"
+kubectl get job bdrs-manual-seeding -n portal -o yaml | grep -A 100 "command:" | head -120
+kubectl get job bdrs-manual-seeding -n portal -o yaml | grep -A 200 "command:" | grep -A 150 "args:"
+kubectl get job bdrs-manual-seeding -n portal -o yaml | grep -A 200 "command:" | grep -A 150 "args:"
+kubectl get job bdrs-manual-seeding -n portal -o yaml > /tmp/bdrs-job-full.yaml
+cat /tmp/bdrs-job-full.yaml | grep -A 50 "containers:" | head -80
+kubectl get pod bdrs-manual-seeding-sn9wk -n portal -o yaml | grep -A 150 "command:"
+cat > /tmp/bdrs-reseed-fixed.yaml <<'EOF'
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bdrs-reseed-fixed
+  namespace: portal
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: bdrs-seeding
+        image: alpine:3.19
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - |
+          apk add --no-cache wget
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL000000000065","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL000000000065"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000000015G","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000000MASS","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000002IKLN","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+EOF
+
+kubectl delete job bdrs-reseed-manual -n portal
+kubectl apply -f /tmp/bdrs-reseed-fixed.yaml
+kubectl logs -n portal -l job-name=bdrs-reseed-fixed -f
+kubectl exec -n portal deployment/bdrs-server -- wget --header="Content-Type: application/json" --header="x-api-key: TEST" --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' http://localhost:8081/api/management/bpn-directory -S -O -
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000003CRHK'
+kubectl logs -n portal deployment/bdrs-server --tail=50
+kubectl get deployment bdrs-server -n portal -o yaml | grep -i "valid\|resolve\|check"
+kubectl get pods -n portal -l app.kubernetes.io/name=bdrs-server
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://ssi-dim-wallet-service.portal.svc.cluster.local:8080/.well-known/did.json' 2>&1 | head -5
+kubectl get deployment bdrs-server -n portal -o yaml | grep -i "USE_HTTPS\|DID_WEB"
+kubectl exec -n portal deployment/bdrs-server -- wget --header="Content-Type: application/json" --header="x-api-key: TEST" --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' http://localhost:8081/api/management/bpn-directory -S -O -
+kubectl exec -n portal deployment/bdrs-server -- wget --header="Content-Type: application/json" --header="x-api-key: TEST" --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' http://localhost:8081/api/management/bpn-directory -S -O -
+kubectl exec -n portal deployment/bdrs-server -- env | grep DID_WEB
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://ssi-dim-wallet-stub.51.178.94.25.nip.io/BPNL00000003CRHK/did.json' 2>&1 | head -10
+kubectl exec -n portal deployment/bdrs-server -- env | sort
+kubectl get configmap -n portal | grep bdrs
+kubectl describe deployment bdrs-server -n portal | grep -A 5 "Mounts:"
+grep -r "seeding\|persist\|storage" ~/projects/assembly/tractus-x-umbrella/charts/umbrella/values-ovh-hosts-portal.yaml | head -20
+kubectl exec -n portal deployment/bdrs-server -- env | grep TRUSTED
+kubectl get configmap bdrs-server -n portal -o yaml
+grep -A 15 "seeding:" ~/projects/assembly/tractus-x-umbrella/charts/umbrella/values-ovh-hosts-portal.yaml
+kubectl exec -n portal deployment/bdrs-server -- wget --header="Content-Type: application/json" --header="x-api-key: TEST" --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' http://localhost:8081/api/management/bpn-directory -S -O -
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000003CRHK'
+kubectl get deployment bdrs-server -n portal -o jsonpath='{.spec.template.spec.containers[0].image}'
+kubectl get pod -n portal $(kubectl get pods -n portal -l job-name=bdrs-manual-seeding -o jsonpath='{.items[0].metadata.name}') -o yaml | grep -A 5 "serviceAccount"
+kubectl exec -n portal deployment/bdrs-server -- env | grep "^EDC" | sort
+kubectl get deployment bdrs-server -n portal -o yaml > /tmp/bdrs-deployment-now.yaml
+kubectl describe replicaset -n portal | grep -A 20 "bdrs-server" | head -30
+kubectl exec -n portal deployment/bdrs-server -- wget --header="x-api-key: TEST" -qO- 'http://localhost:8081/api/management/bpn-directory'
+find ~/projects/assembly/tractus-x-umbrella/charts -name "*bdrs*" -type f
+kubectl exec -n portal deployment/bdrs-server -- sh -c "apk add curl && curl -v -H 'x-api-key: TEST' http://localhost:8081/api/management/bpn-directory 2>&1 | head -30"
+kubectl exec -n portal deployment/bdrs-server -- wget --header="x-api-key: TEST" --header="Accept: application/json" -S -O - 'http://localhost:8081/api/management/bpn-directory' 2>&1
+kubectl exec -n portal deployment/bdrs-server -- sh -c "wget --header='x-api-key: TEST' -qO- 'http://localhost:8081/api/management/bpn-directory' | gunzip"
+git add dashboard/
+git remote -v
+git commit -m "Primera implementación del dashboard"
+git push
+cd dashboard/
+git add backend.py 
+git add dashboard.js 
+git add index.html 
+git commit -m "Dashboard. Despliegue de paneles recuperado"
+git add dashboard.js 
+git add index.html 
+git commit -m "Dashboard. Fase 2. Listar Assets."
+git push
+git add backend.py 
+git add config.json 
+git add dashboard.js 
+git add index.html 
+git add 20260317-resolucion-creacion-politicas-catena-x.md 
+git commit -m "Dashboard. BPNs de ejemplo añadidos"
+git push
+git add backend.py 
+git add dashboard.js 
+git add index.html 
+git commit -m "Dashboard. Generación de contrato implementado"
+git push
+curl -X POST http://localhost:5000/api/phase5/catalog-request -H "Content-Type: application/json" -d '{}' | jq
+cd projects/assembly/
+ls
+cd iflex/
+ls
+vscode .
+/ls
+cd ..
+ls
+cd iflex/
+ls
+cd dashboard/
+ls
+cd projects/
+ls
+cd assembly/
+ls
+cd tractus-x-umbrella
+vscode .
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+wget --header "Content-Type: application/json"      --header "x-api-key: <authKey>"      --post-data '{"bpn": "BPNL00000003CRHK", "did": "did:web:..."}'      "http://bdrs-server/api/management/bpn-directory"
+kubectl get pods -n umbrella
+kubectl get pods -n portal
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+git status
+git remote -v
+git commit -m "Problema con BDRS. Path de endpoint actualizado para 8082"
+git push
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+kubectl get pods -n umbrella
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+./deploy-mass-connector.sh 
+./deploy-ikln-connector.sh 
+kubectl get pods -n portal 
+git status 
+git commit -m "BDRS errores. Values para despliegue de conectores actualizados"
+git status
+git commit -m "BDRS errores. Values para despliegue de conectores actualizados"
+git push
+sleep 1
+cat /tmp/ikln-logs.txt | grep -E "BDRS|bdrs|Directory|directory|Credential|credential|DIM|wallet|IATP" | head -30
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && curl -k -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "Content-Type: application/json"   -H "X-API-KEY: ikln-api-key-change-in-production"   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "http://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }' | jq .
+chmod +x verificar-bdrs-config.sh 
+./verificar-bdrs-config.sh 
+# Después de redesplegar:
+./verificar-bdrs-config.sh
+cd  dashboard/
+./stop.sh 
+./start.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./stop.sh 
+./start.sh 
+./start.sh 
+echo $! > /tmp/port-forward-issuer.pid && sleep 2 && curl -s http://localhost:18080/healthz
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+curl -X POST "https://edc-mass-control.51.178.94.25.nip.io/management/v3/assets/request"   -H "Content-Type: application/json"   -H "X-API-KEY: mass-api-key-change-in-production"   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "QuerySpec",
+    "offset": 0,
+    "limit": 10,
+    "sortOrder": "DESC",
+    "filterExpression": []
+  }'
+kubectl exec -n portal deployment/bdrs-server -- wget -qO- 'http://localhost:8082/api/directory?bpn=BPNL00000003CRHK'
+cd dashboard/
+source venv/bin/activate
+./start.sh
+kubectl exec -n portal deployment/bdrs-server -- sh -c "wget --header='x-api-key: TEST' -qO- 'http://localhost:8081/api/management/bpn-directory' | gunzip"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl exec -n portal deployment/bdrs-server -- sh -c "wget --header='x-api-key: TEST' -qO- 'http://localhost:8081/api/management/bpn-directory' | gunzip"
+kubectl get pods -n umbrella | grep -E "(mass|ikln)"
+cd projects/assemblyls
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+vscode .
+cd projects/assembly/
+ls
+cd iflex/
+vscode .
+ls
+cd projects/
+ls
+cd ubikare/
+ls
+cd essad/
+ls
+docker ps
+docker-compose down
+cd dashboard/
+./start.sh 
+cd projects/assembly/
+ls
+cd iflex/
+vscode .
+git remote -v 
+git status
+git status
+git commit -m "dim-wallet-proxy. Corrigiendo el error para que proporcione las VC correctamente"
+git push
+git add dim-wallet-proxy/proxy.js 
+git commit -m "dim-wallet-proxy. Corrección para no modificar el presentations/query response"
+git push
+ls
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+kubectl get deployments -n portal
+kubectl get pods -n portal | grep proxy
+kubectl get pods -n umbrella
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl exec ikln-edc-controlplane -- wget http://dim-wallet-proxy.portal.svc.cluster.local:8080/health
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+kubectl exec ikln-edc-controlplane-79f974b7cc-cgsfx   -- wget http://dim-wallet-proxy.portal.svc.cluster.local:8080/health
+curl -v "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/BPNL00000002IKLN/did.json" 2>&1 | head -40
+curl -v "http://ssi-dim-wallet-stub.51.178.94.25.nip.io/BPNL00000002IKLN/did.json" 2>&1
+cd dashboard/
+./start.sh 
+ls
+cd projects/
+ls
+cd ikerlan/
+ls
+cd tractus-x-umbrella-dataspace-ikerlan/
+ls
+cd ..
+cd tractus-x-umbrella-ikerlan/
+ls
+git remote -v
+cd ..
+cd tractus-x-umbrella-dataspace-ikerlan/vscode .
+cd tractus-x-umbrella-dataspace-ikerlan/
+vscode .
+cd projects/assembly/
+ls
+cd iflex/
+ls
+vscode .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+vscode .
+cd dashboard/
+cd dashboard/
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -k   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "http://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "offset": 0,
+      "limit": 100
+    }
+  }'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "http://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "offset": 0,
+      "limit": 100
+    }
+  }'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -k   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "offset": 0,
+      "limit": 100
+    }
+  }
+
+'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -k   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "offset": 0,
+      "limit": 100
+    }
+  }'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "offset": 0,
+      "limit": 100
+    }
+  }'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/contractnegotiations"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{"@context":["https://w3id.org/edc/connector/management/v0.0.1"],"@type":"ContractRequest","counterPartyAddress":"https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp","counterPartyId":"BPNL00000000MASS","protocol":"dataspace-protocol-http","policy":{"@id":"ZHVtbXktcGRmLWZvci1pa2VybGFu:cGRmLWR1bW15LW1hc3MtaWtsbg==:ZmIyYjZhOTgtNjUxNy00OWRhLWIxMWItY2FhN2JjOGE4OWI3","@type":"odrl:Offer","odrl:obligation":[],"odrl:permission":{"odrl:action":{"@id":"odrl:use"},"odrl:constraint":{"odrl:and":[{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/Membership"},"odrl:operator":{"@id":"odrl:eq"},"odrl:rightOperand":"active"},{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/FrameworkAgreement"},"odrl:operator":{"@id":"odrl:eq"},"odrl:rightOperand":"DataExchangeGovernance:1.0"},{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/UsagePurpose"},"odrl:operator":{"@id":"odrl:isAnyOf"},"odrl:rightOperand":"cx.core.industrycore:1"}]}},"odrl:prohibition":[],"odrl:target":"pdf-dummy-mass-ikln","odrl:assigner":"BPNL00000000MASS"},"callbackAddresses":[]}
+
+'
+curl -X POST "https://edc-ikln-control.51.178.94.25.nip.io/management/v3/contractnegotiations"   -H "X-Api-Key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{"@context":["https://w3id.org/edc/connector/management/v0.0.1"],"@type":"ContractRequest","counterPartyAddress":"https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp","counterPartyId":"BPNL00000000MASS","protocol":"dataspace-protocol-http","policy":{"@id":"ZHVtbXktcGRmLWZvci1pa2VybGFu:cGRmLWR1bW15LW1hc3MtaWtsbg==:ZmIyYjZhOTgtNjUxNy00OWRhLWIxMWItY2FhN2JjOGE4OWI3","@type":"odrl:Offer","odrl:obligation":[],"odrl:permission":{"odrl:action":{"@id":"odrl:use"},"odrl:constraint":{"odrl:and":[{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/Membership"},"odrl:operator":{"@id":"odrl:eq"},"odrl:rightOperand":"active"},{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/FrameworkAgreement"},"odrl:operator":{"@id":"odrl:eq"},"odrl:rightOperand":"DataExchangeGovernance:1.0"},{"odrl:leftOperand":{"@id":"https://w3id.org/catenax/2025/9/policy/UsagePurpose"},"odrl:operator":{"@id":"odrl:isAnyOf"},"odrl:rightOperand":"cx.core.industrycore:1"}]}},"odrl:prohibition":[],"odrl:target":"pdf-dummy-mass-ikln","odrl:assigner":"BPNL00000000MASS"},"callbackAddresses":[]}'
+git dashboard/backend.py
+git add dashboard/backend.py
+git add dashboard/config.json 
+git remote -v
+git commit -m "Dashboard. FASE 5 catalog request"
+git push
+git add dashboard/backend.py 
+git commit -m "FASE 5 catalog request actualizado"
+git push
+git status
+git commit -m "Dashboard. FASE 6. Catalog discovery, presentacion de assets e inicio de negociacion"
+git push
+git status
+git commit -m "Dashboard. FASE 6 Contract negotiation"
+git push
+git commit -m "Dashboard. FASE 6. Contract negotiations. Listar"
+git push
+cd projects/assembly/
+ls
+cd iflex/
+vscode .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+vscode .
+cd  ui
+ls
+cd k8s/
+./deploy.sh
+cd dashboard/
+./start.sh 
+./deploy-ikln-connector.sh 
+./deploy-mass-connector.sh 
+./deploy-ikln-connector.sh 
+cd dashboard/
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+cd ui/
+cd k8s/
+ls
+./deploy
+./deploy.sh 
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+./deploy.sh 
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+cd ..
+cd dashboard/
+./cleanup-transfers-db.sh 
+cd projects/assembly/
+ls
+cd iflex/
+vscode .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+vscode .
+git status
+git commit -m "Terraform. Eliminado uno de los 2 nodos. Pasamos de 2 a 1 nodos"
+git push
+git status
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+cd /home/xmendialdua/projects/assembly/tractus-x-umbrella/terraform-ovh
+terraform plan
+terraform apply
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+echo "=== 1. NODOS ACTUALES ==="
+kubectl get nodes
+echo ""
+echo "=== 2. USO DE RECURSOS POR NODO ==="
+kubectl top nodes
+echo ""
+echo "=== 3. DISTRIBUCIÓN DE PODS ==="
+echo "Pods por nodo:"
+kubectl get pods -A -o wide --no-headers | awk '{print $8}' | grep tractus | sort | uniq -c
+echo ""
+echo "=== 4. CAPACIDAD DE UN NODO ==="
+kubectl get nodes -o json | jq -r '.items[0] | "CPU: \(.status.capacity.cpu) cores, RAM: \(.status.capacity.memory)"'
+echo ""
+echo "=== 5. ANÁLISIS DE CONSOLIDACIÓN ==="
+echo "Si consolidas en 1 nodo, el uso sería la SUMA de ambos nodos actuales:"
+kubectl top nodes --no-headers | awk '{cpu+=$2; mem+=$4} END {print "CPU total usado: " cpu "\nRAM total usada: " mem}'
+terraform plan
+terraform apply
+kubectl get pods -n umbrella
+kubectl get pods -n mass-connector
+kubectl get pods -n umbrella
+kubectl get svc -n mass-connector | grep -E "NAME|controlplane"
+kubectl get svc -n umbrella | grep -E "NAME|controlplane"
+echo ""
+echo "=== MASS Ingress ==="
+kubectl get ingress -n umbrella
+echo ""
+echo "=== IKLN Ingress ==="
+kubectl get ingress -n umbrella
+kubectl run test-curl --image=curlimages/curl:latest --rm -it --restart=Never --   curl -v http://mass-edc-tractusx-connector-controlplane.mass-connector.svc.cluster.local:8081/api/check/health
+curl -k -v https://edc-mass-control.51.178.94.25.nip.io/api/check/health
+curl -k -v https://edc-ikln-control.51.178.94.25.nip.io/api/check/health
+echo "========================================="
+echo "1. VERIFICAR ESTADO DE PODS EDC"
+echo "========================================="
+echo ""
+echo "=== MASS Connector ==="
+kubectl get pods -n umbrella
+echo ""
+echo "=== IKLN Connector ==="
+kubectl get pods -n umbrella
+echo ""
+echo "========================================="
+echo "2. VERIFICAR SERVICIOS"
+echo "========================================="
+echo ""
+echo "=== MASS Services ==="
+kubectl get svc -n umbrella | grep -E "NAME|controlplane"
+echo ""
+echo "=== IKLN Services ==="
+kubectl get svc -n umbrella | grep -E "NAME|controlplane"
+echo ""
+echo "========================================="
+echo "3. VERIFICAR INGRESS"
+echo "========================================="
+echo ""
+echo "=== MASS Ingress ==="
+kubectl get ingress -n umbrella
+echo ""
+echo "=== IKLN Ingress ==="
+kubectl get ingress -n umbrella
+kubectl logs -n umbrella mass-edc-dataplane-54bcb989fb-hhnv6 --tail=100 --previous
+Necesitamos ver qué está causando el error 500 en el Control Plane:
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+echo "========================================="
+echo "1. LOGS COMPLETOS DEL CONTROL PLANE"
+echo "========================================="
+kubectl logs -n umbrella mass-edc-controlplane-584c94ccfb-lb5ff --tail=300
+kubectl delete pod -n umbrella mass-edc-postgresql-0
+kubectl delete pod -n umbrella mass-edc-controlplane-584c94ccfb-lb5ff
+kubectl delete pod -n umbrella -l app.kubernetes.io/component=dataplane,app.kubernetes.io/instance=mass-edc
+kubectl get pods -n umbrella | grep mass-edc
+kubectl get pods -n umbrella | grep ikln-edc
+kubectl delete pod -n umbrella ikln-edc-postgresql-0
+kubectl delete pod -n umbrella ikln-edc-controlplane-db5b9485f-zgqhk
+kubectl get pods -n umbrella | grep ikln-edc
+git status
+git commit -m "Dashboard. Titulo de index"
+git push
+git commit -m "Dashboard. Titulo de index. Icono de MASS"
+git push
+git status
+git commit -m "Dashboard. Añadido logo MASS"
+cd dashboard/
+./start.sh 
+cd projects/assembly/iflex/
+vscode .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+vscode .
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+kubectl get deployment -n umbrella mass-edc-controlplane -o yaml | grep -A 5 "authKey"
+kubectl get secrets -n umbrella | grep -E "NAME|mass"
+echo "=== CERTIFICADOS TLS ==="
+kubectl get secrets -n umbrella | grep -E "edc-mass.*tls"
+echo "=== ESTADO DE PODS ==="
+kubectl get pods -n umbrella | grep mass-edc
+kubectl describe pod -n umbrella -l app.kubernetes.io/instance=mass-edc | grep -i "secret.*not found\|MountVolume.SetUp failed" || echo "✅ Todos los secretos están disponibles"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+echo "=== SECRETOS DE MASS EDC ==="
+kubectl get secrets -n umbrella | grep -E "NAME|mass"
+echo ""
+echo "=== CERTIFICADOS TLS ==="
+kubectl get secrets -n umbrella | grep -E "edc-mass.*tls"
+echo ""
+echo "=== ESTADO DE PODS ==="
+kubectl get pods -n umbrella | grep mass-edc
+echo ""
+echo "=== VERIFICAR SI FALTAN SECRETOS ==="
+kubectl describe pod -n umbrella -l app.kubernetes.io/instance=mass-edc | grep -i "secret.*not found\|MountVolume.SetUp failed" || echo "✅ Todos los secretos están disponibles"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+echo "=== SECRETOS DE MASS EDC ==="
+kubectl get secrets -n umbrella | grep -E "NAME|mass"
+echo ""
+echo "=== CERTIFICADOS TLS ==="
+kubectl get secrets -n umbrella | grep -E "edc-mass.*tls"
+echo ""
+echo "=== ESTADO DE PODS ==="
+kubectl get pods -n umbrella | grep mass-edc
+echo ""
+echo "=== VERIFICAR SI FALTAN SECRETOS ==="
+kubectl describe pod -n umbrella -l app.kubernetes.io/instance=mass-edc | grep -i "secret.*not found\|MountVolume.SetUp failed" || echo "✅ Todos los secretos están disponibles"
+helm uninstall mass-edc -n umbrella
+kubectl delete pvc -n umbrella -l app.kubernetes.io/instance=mass-edc
+kubectl get pods -n umbrella | grep mass-edc
+sleep 20
+cd /home/xmendialdua/projects/assembly/tractus-x-umbrella
+./deploy-mass-connector.sh
+git push
+git tag -a v0.1 -m "Primera version completa del dashboard" 
+git status
+git branch
+git push origin v1.0
+git tag
+git push origin --follow-tags
+cd src/poc
+./start.sh
+./start.sh 
+./start.sh
+cd scripts/
+./start-demo.sh 
+cd ..
+docker compose up --build
+./scripts/start-demo.sh 
+docker --version
+docker compose version
+docker-compose --version
+docker-compose up --build
+git remote -v
+ls
+cd projects/
+ls
+cd ubikare/
+ls
+cd essad/
+ls
+git status
+git pull
+git remote -v
+git branch
+git fetch origin
+git reset --hard origin/main
+git status
+git pull
+vscode .
+cd projects/assembly/iflex/
+ls
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+vscode .
+which vscode
+which code
+type vscode
+cd projects/assembly/iflex/
+code .
+cd src/poc/
+ls
+./start.sh 
+cd projects/assembly/iflex/
+ls
+code .
+cd projects/assembly/
+ls
+cd tractus-x-umbrella
+ls
+code .
+cd src/poc/
+./start.sh 
+chmod +x test-edr-availability.sh
+./test-edr-availability.sh 8312fc03-07da-456c-b434-2e3f48469001
+cd projects/assembly/iflex/
+code .
+cd projects/assembly/
+cd tractus-x-umbrella
+ls
+code .
+cd ..
+ls
+cd ubikare/
+ls
+cd essad/
+ls
+cd src
+ls
+cd essad/
+ls
+cd projects/assembly/iflex/
+code .
+cd src/poc
+ls
+./start.sh 
+git add src/poc_next/
+git restore --staged src/poc_next/backend/venv/
+git restore --staged src/poc_next/frontend/venv/
+git status
+git commit -m "Dashboard POC Next. Primera versión"
+git push 
+git add src/poc_next/GUIA_DESPLIEGUE.md 
+git commit -m "Dashboard POC Next. Documento ejecucion"
+git add src/poc_next/GUIA_DESPLIEGUE.md 
+git commit -m "Dashboard POC Next. Documento ejecucion"
+git status
+git commit -m "Dashboard POC Next. Actualizando partner-data"
+cd src/poc
+ls
+./start.sh 
+cd src/poc_next/
+./start.sh 
+./stop.sh 
+./start.sh 
+tail -f backend.log
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+cd src/poc_next/
+./restart.sh 
+cd src/poc_next/
+cd ..
+git status
+git commit -m "Dashboard POC Next. Negociacion corregida en partner-data"
+git push
+git commit -m "Dashboard POC Next. Partner-data. Transferencia finalizada con descarga"
+git push
+git commit -m "Dashboard POC Next. Partner-data. Transferencia finalizada con descarga, tiempo de refresco optimizado. Pero botón habilitado incluso con EDR no disponible"
+git push
+git commit -m "Dashboard POC Next. Partner-data. Transferencia finalizada con descarga, tiempo de refresco optimizado. Deshabilitando botones con EDR no disponible"
+git push
+git commit -m "Dashboard POC Next. Partner-data. Habilitadas trazas para el terminal"
+git push
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+cd /home/xmendialdua/projects/assembly/iflex/dashboard
+./cleanup-transfers-db.sh terminated
+./cleanup-transfers-db.sh 
+./cleanup-transfers-db.sh dd
+./cleanup-transfers-db.sh old
+./cleanup-transfers-db.sh completed
+./cleanup-transfers-db.sh failed
+./cleanup-transfers-db.sh terminated
+./cleanup-transfers-db.sh started
+./cleanup-transfers-db.sh terminated
+./cleanup-transfers-db.sh all
+cd src/poc
+ls
+./start.sh 
+cd projects/assembly/tractus-x-umbrella
+ls
+code .
+cd projects/assembly/iflex/
+ls
+code .
+cd src/poc_next/
+./start.sh 
+ls
+./dashboard/cleanup-transfers-db.sh 
+./dashboard/cleanup-transfers-db.sh terminated
+./dashboard/cleanup-transfers-db.sh started
+cd ui
+ls
+cd k8s
+ls
+cd ..
+./k8s/deploy.sh 
+cd k8s/
+./deploy
+./deploy.sh 
+ls
+cd projects/assembly/
+ls
+cd iflex/
+ls
+code .
+cd projects/
+ls
+cd ikerlan/
+ls
+cd ..
+ls
+cd ..
+ls
+cd training/
+ls
+mkdir skills
+ls
+cd skills/
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl exec -it ikln-edc-postgresql-0 -n umbrella -- bash
+kubectl exec -it ikln-edc-vault-0 -n umbrella -- sh
+kubectl exec -it ikln-edc-vault-0 -n umbrella --   vault kv get -field=tokenSignerPrivateKey secret/ > /tmp/key-from-vault.pem
+openssl ec -in token-signer-private-key.pem -text -nooutopenssl ec -in token-signer-private-key.pem -text -nooutopenssl ec -in token-signer-private-key.pem -text -nooutopenssl ec -in token-signer-private-key.pem -text -noout
+openssl ec -in token-signer-private-key.pem -text -nooutopenssl ec -in token-signer-private-key.pem -text -nooutopenssl ec -in token-signer-private-key.pem -text -noout# Información completa de la clave EC
+openssl ec -in token-signer-private-key.pem -text -noout
+# Verificar específicamente que sea secp256k1
+openssl ec -in token-signer-private-key.pem -text -noout | grep "ASN1 OID"# Información completa de la clave EC
+openssl ec -in token-signer-private-key.pem -text -noout
+# Verificar específicamente que sea secp256k1
+openssl ec -in token-signer-private-key.pem -text -noout | grep "ASN1 OID"# Información completa de la clave EC
+openssl ec -in token-signer-private-key.pem -text -noout
+# Verificar específicamente que sea secp256k1
+openssl ec -in token-signer-private-key.pem -text -noout | grep "ASN1 OID"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+openssl ec -in token-signer-private-key.pem -text -noout
+# Extraer la clave privada del Vault del conector IKLN
+kubectl exec -it ikln-edc-vault-0 -n umbrella --   vault kv get -field=tokenSignerPrivateKey secret/ > /tmp/ikln-private-key.pem
+# Verificar que se extrajo correctamente
+ls -lh /tmp/ikln-private-key.pem
+cd projects/assembly/tractus-x-umbrella
+code .
+cd projects/ase
+cd projects/assembly/
+ls
+cd iflex/
+code .
+cd dashboard/
+./cleanup-transfers-db.sh 
+./cleanup-transfers-db.sh all
+cd src/poc_next/
+./start.sh 
+cd src/poc
+./start.sh 
+# SIN -it cuando rediriges a archivo
+kubectl exec ikln-edc-vault-0 -n umbrella --   vault kv get -field=tokenSignerPrivateKey secret/ > /tmp/ikln-private-key.pem
+# Verificar que se extrajo
+ls -lh /tmp/ikln-private-key.pem
+# Ver el contenido para confirmar que no está vacío
+head -5 /tmp/ikln-private-key.pem
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+# SIN -it cuando rediriges a archivo
+kubectl exec ikln-edc-vault-0 -n umbrella --   vault kv get -field=tokenSignerPrivateKey secret/ > /tmp/ikln-private-key.pem
+# Verificar que se extrajo
+ls -lh /tmp/ikln-private-key.pem
+# Ver el contenido para confirmar que no está vacío
+head -5 /tmp/ikln-private-key.pem
+EDC_DATAPLANE_TOKEN_SIGNING_ALGORITHM: "ES256K"
+# Ver TODAS las variables de entorno relacionadas con Vault del controlplane
+kubectl get deployment -n umbrella ikln-edc-controlplane -o json |   jq -r '.spec.template.spec.containers[0].env[] | select(.name | contains("VAULT") or contains("TOKEN") or contains("KEY"))'
+# Ver TODAS las variables del dataplane
+kubectl get deployment -n umbrella ikln-edc-dataplane -o json |   jq -r '.spec.template.spec.containers[0].env[] | select(.name | contains("VAULT") or contains("TOKEN") or contains("KEY"))'
+# Listar todos los secret engines
+kubectl exec ikln-edc-vault-0 -n umbrella -- vault secrets list
+# Listar paths bajo secret/ (KV v2)
+kubectl exec ikln-edc-vault-0 -n umbrella -- vault kv list secret/
+# Si hay subpaths, explorarlos
+kubectl exec ikln-edc-vault-0 -n umbrella -- vault kv list secret/edc
+kubectl exec ikln-edc-vault-0 -n umbrella -- vault kv list secret/keys
+kubectl exec ikln-edc-vault-0 -n umbrella -- vault kv list secret/ikln
+# Extraer clave privada actual
+kubectl exec ikln-edc-vault-0 -n umbrella --   vault kv get -field=content secret/tokenSignerPrivateKey > /tmp/ikln-current-private-key.pem
+# Verificar si es RSA o EC
+head -1 /tmp/ikln-current-private-key.pem
+# Si dice "BEGIN RSA PRIVATE KEY" o "BEGIN PRIVATE KEY" → es RSA
+# Si dice "BEGIN EC PRIVATE KEY" → es EC (pero probablemente NO secp256k1)
+# Si es RSA, verificar:
+openssl rsa -in /tmp/ikln-current-private-key.pem -text -noout | head -1
+# Mostrará: "Private-Key: (2048 bit)" o similar
+# Si es EC, verificar curva:
+openssl ec -in /tmp/ikln-current-private-key.pem -text -noout | grep "ASN1 OID"
+# Debería mostrar: secp256k1 (pero probablemente no)
+# Ver el contenido completo del secret para entender su estructura
+kubectl exec ikln-edc-vault-0 -n umbrella --   vault kv get -format=json secret/tokenSignerPrivateKey | jq '.'
+# Esto mostrará todos los campos disponibles y su contenido
+cd src/poc_next/
+./diagnose-docker.sh 
+cd src/poc_next/
+./start.sh 
+cd src/poc_next
+./build.sh
+./test-docker.sh 
+docker-compose down
+./start.sh 
+./check-docker-config.sh 
+./test-docker.sh 
+./stop-docker.sh 
+./test-docker.sh 
+./diagnose-docker.sh
+./stop-docker.sh && ./test-docker.sh
+git status
+git commit -m "Dashboard POC Next. Renombrado el namespace para el despliegue en kubernetes"
+git push
+git add k8s/deploy-ovh.sh 
+git commit -m "Dashboard POC Next. Añadido script para despliegue en OVH"
+cd src/poc_next/
+git add backend/.dockerignore 
+git add backend/Dockerfile 
+git add frontend/.dockerignore 
+git add frontend/Dockerfile 
+git add k8s/
+git add build.sh 
+git add check-docker-config.sh 
+git add DEPLOY.md 
+git add diagnose-docker.sh 
+git add DOCKER_COMPOSE.md 
+git add docker-compose.yml 
+git add QUICK_START_DOCKER.md 
+git add stop-docker.sh 
+git add test-docker.sh 
+git add TROUBLESHOOTING_DOCKER.md 
+git add verify-docker.sh 
+git status
+git commit -m "Dashboard POC Next. Dockerizando aplicación"
+git push
+git add build-k8s.sh 
+git status
+git commit -m "Dashboard POC Next. Configuracion de URLs para despliegue en OVH"
+git push
+git add build-k8s_OVH.sh 
+git status
+git commit -m "Dashboard POC Next. Renombrado script para despliegue en OVH"
+git push
+cd projects/assembly/iflex/
+code .
+cd 
+cd projects/assembly/
+mkdir poc_sharepoint
+ls
+cd poc_sharepoint/
+code .
+cd  projects/
+ls
+git status
+git push
+ls
+cd src/poc_next/
+ls
+./start.sh 
+npm install
+npm run dev
+lsof -ti:3020 | xargs kill -9 2>/dev/null || true && npm run dev
+pkill -f "next dev -p 3020" || fuser -k 3020/tcp || true
+npm run dev
+cd src/poc_next/
+source venv/bin/activate && uvicorn main:app --reload --port 5001 --host 0.0.0.0
+ls
+cd projects/
+ls
+cd assembly/
+ls
+cd poc_sharepoint/
+code .
+cd ..
+ls
+cd iflex/
+code .
+cd ..
+ls
+cd poc_sharepoint/
+ls
+code .
+cd ..
+cd poc_sharepoint/
+code .
+cd projects/assembly/
+cd iflex/
+ls
+code .
+git status
+git add PROCESO_LOGIN_MICROSOFT.md 
+git commit -m "Documentación sobre el proceso de login"
+git push
+ls
+./start.sh 
+./stop.sh 
+./start.sh 
+lsof -i :3020
+lsof -i :3020 || echo "Puerto 3020 está libre"
+./start.sh 
+cd src/poc_next/
+./start.sh 
+./start.sh
+./stop.sh 
+./start.sh
+cd projects/assembly/
+ls
+cd iflex/
+ls
+code .
+cd projects/assembly/
+ls
+cd poc_sharepoint/
+ls
+code .
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n ds-management-ui
+kubectl describe pod poc-next-frontend-5fff964f58-vq968 -n ds-management-ui | tail -30
+kubectl delete pod poc-next-frontend-cdb59b78b-l7rk8 -n ds-management-ui
+kubectl get pods -n ds-management-ui -w
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella
+kubectl get pods -n portal
+kubectl get pods -n ds-management
+kubectl get pods -n ds-management-ui
+cd /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s
+./build-and-push-frontend.sh
+kubectl rollout restart deployment/poc-next-frontend -n ds-management-ui
+curl -s http://localhost:5001/api/sharepoint/health | jq
+git status
+git commit -m "Dashboard POC Next. SharePoint Data Browser. Descarga de ficheros OK, con el nombre del fichero descargado correcto."
+git push
+cd src/poc_next/k8s/
+ls
+./deploy-ovh.sh 
+cd ..
+./stop.sh
+cd src/poc_next/
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh
+./start.sh
+git status
+git commit -m "Dashboard POC Next. SharePoint Data Browser. Preparando despliegue para OVH. Se produce un error al cargar http://ds-management.51.178.94.25.nip.io/sharepoint-data"
+git push
+git commit -m "Dashboard POC Next. SharePoint Data Browser. Preparando despliegue para OVH. Actualizada la construccion de la imagen docker"
+git push
+git status
+git commit -m "Dashboard POC Next. SharePoint Data Browser. Preparando despliegue para OVH. Actualizada la construccion de la imagen docker. El Dockerfile ahora instalará las dependencias sin requerir que el lockfile esté sincronizado, lo cual es necesario porque las dependencias de MSAL se añadieron localmente pero el lockfile en el repositorio puede no estar actualizado."
+git commit -m "Dashboard POC Next. SharePoint Data Browser. Ahora se produce un error en los tres routes: Application error: a client-side exception has occurred while loading ds-management.51.178.94.25.nip.io (see the browser console for more information)."
+git push
+git commit -m "Dashboard POC Next. Asset desde Sharepoint. Creacion de asset basado en un archivo de SharePoint. Pero el fichero no se puede descargar"
+git push
+cd projects/assembly/iflex/
+ls
+code .
+cd /home/xmendialdua/projects/assembly/iflex/dashboard
+./cleanup-transfers-db.sh all
+./cleanup-negotiations-db.sh all
+./cleanup-transfers-db.sh all
+./cleanup-negotiations-db.sh all
+cd ..
+cd src/poc_next/backend/
+source venv/bin/activate
+python main.py
+exit
+git commit -m "Dashboard POC Next. Versión localhost corregida. Version OVH con error Loading Authentication..."
+git commit -m "Dashboard POC Next. Versión corregida, para que localhost no de timeout de autenticacion Sharepoint"
+git push
+curl http://localhost:5001/api/sharepoint-proxy/health
+curl http://localhost:5001/api/sharepoint-proxy/info
+cd src/poc_next/
+./start.sh 
+./stop.sh 
+./start.sh 
+./stop.sh 
+./start.sh 
+kubectl get pods -n ds-management-ui
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n ds-management-ui
+kubectl logs -n ds-management-ui deployment/poc-next-frontend
+kubectl get ingress -n ds-management-ui
+kubectl get pods -n umbrella 
+kubectl get logs -f n -umbfrella
+kubectl get logs -f n -umbrella
+kubectl get logs -f -n umbrella
+kubectl logs -n umbrella
+kubectl logs -n umbrella -f
+kubectl logs -h
+git commit -m "Dashboard POC Next. Asset desde Sharepoint. Descarga funciona con link temporal (1 hora desde la creación del asset"
+git push
+git commit -m "Dashboard POC Next. Corrección en la asignacion del nombre a los ficheros descargados"
+git push
+git add dashboard/cleanup-negotiations-db.sh 
+git commit -m "Script DB. Eliminación de negociaciones de la base de datos del conector (IKLN)"
+git push
+curl http://localhost:5001/api/sharepoint-proxy/health
+cd dashboard/
+ls
+./cleanup-transfers-db.sh 
+./cleanup-transfers-db.sh all
+cd projects/assembly/iflex/
+code .
+cd projects/assembly/tractus-x-umbrella
+ls
+code .
+cd src/poc_next/
+./start.sh 
+cd /home/xmendialdua/projects/assembly/iflex/src/poc_next/backend
+grep "requests" requirements.txt
+git commit -m "Dashboard POC Next. Sharepoint-data funcionando en OVH. Acceso a ds-management con https. Corregido error al tratar de descargar un fichero de Sharepoint"
+git status
+cd projects/assembly/
+cd iflex/
+code .
+cd /home/xmendialdua/projects/assembly/iflex && git add src/poc_next/frontend/lib/authConfig.ts src/poc_next/frontend/app/sharepoint-data/page.tsx && git commit -m "Dashboard POC Next. Sharepoint. Añadir permiso Sites.ReadWrite.All y botón de test para sharing links
+
+- authConfig.ts: Añadido Sites.ReadWrite.All a loginRequest
+- sharepoint-data: Añadido panel de test para probar creación de sharing links
+- Permite verificar si Azure AD está correctamente configurado"
+cd /home/xmendialdua/projects/assembly/iflex && git add src/poc_next/k8s/build-and-push-frontend.sh && git commit -m "Dashboard POC Next. Corregido para despliegue en OVH. Corregir variables de entorno en script de build del frontend
+
+Problema:
+- Next.js requiere variables NEXT_PUBLIC_* en build time, no en runtime
+- El deployment anterior no tenía las variables configuradas correctamente
+- La URL de SharePoint no aparecía en la UI (mostraba 'No configurado')
+
+Solución:
+- Corregir NEXT_PUBLIC_AZURE_REDIRECT_URI (eliminar /sharepoint-data del path)
+- Cambiar NEXT_PUBLIC_API_URL a cadena vacía (usa proxy interno de Next.js)
+- El script build-and-push-frontend.sh pasa las variables como --build-arg
+- Las variables se configuran durante el docker build, no en runtime
+
+Cambios en las variables:
+- NEXT_PUBLIC_API_URL: '' (vacío, usa proxy interno)
+- NEXT_PUBLIC_AZURE_REDIRECT_URI: 'https://ds-management.51.178.94.25.nip.io' (sin /sharepoint-data)
+- Resto de variables: sin cambios
+
+Tested: ✅ Funciona correctamente en OVH después del redespliegue"
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl logs -n ds-management-ui -l app=sharepoint-proxy --tail=100 -f
+cd /home/xmendialdua/projects/assembly/iflex && git commit -m "Dashboard POC Next. Corregir decodificación base64 en proxy de SharePoint, para poder descargar los ficheros
+
+- Añadir padding automático para base64 URL-safe
+- El frontend elimina el padding (=) al codificar
+- Python base64.urlsafe_b64decode() requiere padding correcto
+- Ahora el proxy añade el padding necesario antes de decodificar
+- Soluciona error '400 Bad Request: Incorrect padding' en descargas EDC"
+cd /home/xmendialdua/projects/assembly/iflex && git commit -m "Dashboard POC Next: Autenticación automática de SharePoint en partner-data. Pendiente de probar.
+
+Frontend (/partner-data):
+- Implementada autenticación automática con SharePoint al cargar la página
+- Añadido indicador de estado de conexión SharePoint en panel de Transferencias
+- Muestra icono verde 'Conectado' con usuario o aspa roja 'No conectado'
+- Autenticación silenciosa en segundo plano (sin popups molestos)
+- Si falta token, intenta autenticación automática al descargar asset de SharePoint
+
+Backend (phase6.py):
+- Nuevo endpoint GET /api/phase6/sharepoint-info/{transfer_id}
+- Extrae drive_id|item_id del asset para descargas de SharePoint
+- Decodifica baseUrl del asset del Provider
+- Determina si un asset es de SharePoint sin necesitar el EDR
+
+TransfersContent:
+- Integrado con estado de autenticación de SharePoint del parent
+- Intenta autenticar automáticamente si detecta asset de SharePoint sin sesión
+- Manejo mejorado de errores de autenticación con mensajes claros
+
+Flujo mejorado:
+1. Usuario entra en /partner-data → autenticación automática SharePoint
+2. Indicador visual muestra estado de conexión
+3. Al descargar asset de SharePoint, usa token del usuario autenticado
+4. No requiere Application permissions en Azure AD (usa delegated permissions)"
+cd dashboard/
+ls
+./cleanup-transfers-db.sh 
+./cleanup-transfers-db.sh all
+./cleanup-edrs-db.sh 
+./cleanup-transfers-db.sh 
+./cleanup-transfers-db.sh all
+./cleanup-edrs-db.sh all
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get deployment sharepoint-proxy -n umbrella
+kubectl get pods -n umbrella
+kubectl get pods -n ds-management-ui
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl apply -f /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-secret.yaml
+kubectl apply -f /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-deployment.yaml
+kubectl apply -f /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-service.yaml
+kubectl get pods -n ds-management-ui | grep sharepoint-proxy
+kubectl get svc -n ds-management-ui | grep sharepoint-proxy
+kubectl get pods -n ds-management-ui | grep sharepoint-proxy
+kubectl get pods -n ds-management-ui | grep sharepoint
+kubectl describe pod -n ds-management-ui $(kubectl get pods -n ds-management-ui -o name | grep sharepoint | cut -d'/' -f2)
+kubectl top nodes
+kubectl delete deployment sharepoint-proxy -n ds-management-ui
+# 1. Eliminar el deployment actual
+kubectl delete deployment sharepoint-proxy -n ds-management-ui
+# 2. Aplicar el deployment con recursos reducidos
+kubectl apply -f /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-deployment.yaml
+# 3. Verificar
+kubectl get pods -n ds-management-ui | grep sharepoint
+kubectl describe pod -n ds-management-ui $(kubectl get pods -n ds-management-ui -o name | grep sharepoint | cut -d'/' -f2)
+	kubectl get pods -n ds-management-ui | grep sharepoint
+	kubectl describe pod -n ds-management-ui $(kubectl get pods -n ds-management-ui -o name | grep sharepoint | cut -d'/' -f2)
+kubectl get pods -n ds-management-ui
+kubectl logs sharepoint-proxy-5d5776775b-k5xgb -n ds-management-ui
+kubectl get all -n ds-management-ui | grep sharepoint
+kubectl get all -n ds-management-ui
+kubectl delete deployment sharepoint-proxy -n ds-management-ui
+kubectl delete service sharepoint-proxy -n ds-management-ui
+kubectl get all -n ds-management-ui | grep sharepoint
+kubectl get secret sharepoint-proxy-credentials -n ds-management-ui
+ls -lh /home/xmendialdua/projects/assembly/iflex/src/poc_next/backend/sharepoint_proxy_app.py
+# Ver las primeras líneas
+head -20 /home/xmendialdua/projects/assembly/iflex/src/poc_next/backend/sharepoint_proxy_app.py
+cat /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-deployment.yaml | grep -A 3 "command:"
+cat /home/xmendialdua/projects/assembly/iflex/src/poc_next/k8s/sharepoint-proxy-deployment.yaml | grep -A 2 "Probe:"
+cd /home/xmendialdua/projects/assembly/iflex/src/poc_next/backend
+docker build -t xmendialdua/poc-next-backend:latest .
+docker push xmendialdua/poc-next-backend:latest
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl apply -f ../k8s/sharepoint-proxy-deployment.yaml
+kubectl apply -f ../k8s/sharepoint-proxy-service.yaml
+kubectl logs -f poc-next-backend-788695987f-29ch5 -n ds-management-ui
+# Frontend logs  
+kubectl logs -f poc-next-frontend-7749dd69f4-djmhd -n ds-management-ui
+cd src/poc_next/
+ls
+./start.sh 
+KUBECINFIG
+KUBECONFIG
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+git commit -m "Script DB. Eliminacion de EDRS de la base de datos"
+git push
+# Agregar solo los archivos modificados relevantes
+git add src/poc_next/backend/api/routes/sharepoint.py
+git add src/poc_next/frontend/components/phases/phase2-content.tsx
+git commit -m "Dashboard POC Next: Implementada la navegación por carpetas con doble click en selector SharePoint. Probado en localhost (pendiente probar en OVH)
+
+- Frontend: Añadir evento onDoubleClick para navegar a carpetas
+- Frontend: Single click selecciona, double click navega
+- Frontend: Mostrar hint 'Doble clic para abrir' en carpetas
+- Frontend: Pasar folder_id completo (drive_id|item_id) al backend
+- Backend: Mejorar endpoint list_files_by_site_url para soportar folder_id
+- Backend: Parsear IDs compuestos correctamente
+- Backend: Añadir logs detallados para diagnóstico
+- Fix: Resolver error 404 al navegar carpetas (usaba /me/drive en vez del site drive)"
+git push
+git commit -m "Dashboard POC Next. Implementada la seleccion de carpetas de sharepoint para la creación de assets"
+git push
+git commit -m "Dashboard POC Next. Monitorización del estado de la conexión con Sharepoint en data-publication"
+git push
+git push origin main
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl get pods -n ds-management-ui -o wide
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl rollout status deployment/poc-next-frontend -n ds-management-ui && kubectl rollout status deployment/poc-next-backend -n ds-management-ui
+kubectl logs -f deployment/poc-next-frontend -n ds-management-ui
+kubectl get pods -n umbrella
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl logs -n umbrella deployment/mass-edc-controlplane --tail=50
+kubectl get deployments -n umbrella
+kubectl get pods -n umbrella
+kubectl get pods -n umbrella | grep control
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl describe pod -n umbrella mass-edc-controlplane-7b66bfb67-g2jrb | grep -A 20 "Events:"
+kubectl get pods -n umbrella | grep control
+kubectl get pods -n umbrella 
+cd /home/xmendialdua/projects/assembly/iflex && git add src/poc_next/backend/api/routes/sharepoint_proxy.py && git commit -m "Dashboard POC Next. Fix: Corrección de  deteccion de tipo de item (file/folder) en metadata.
+
+Problema:
+- El metadata check 'folder' in metadata fallaba con TypeError
+- SharePointFile es una dataclass, no un diccionario
+- Error: argument of type 'SharePointFile' is not iterable
+
+Solución:
+- Usar metadata.is_folder en lugar de 'folder' in metadata
+- Usar metadata.name en lugar de metadata.get('name')
+- Acceder a atributos de la dataclass correctamente
+
+Resultado:
+- El check de metadata funciona correctamente
+- Se puede determinar si es archivo o carpeta"
+cd src/poc_next/
+ls
+./start.sh 
+cd projects/assembly/iflex/
+code .
+cd ..
+cd tractus-x-umbrella
+ls
+code .ç
+code .
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl exec -n umbrella ikln-edc-vault-0 -- vault kv list secret
+curl -k https://edc-mass-control.51.178.94.25.nip.io/.well-known/did.json
+curl -k http://edc-mass-control.51.178.94.25.nip.io/.well-known/did.json
+curl -I -k https://edc-ikln-control.51.178.94.25.nip.io/management   -H "X-Api-Key: ikln-api-key-change-in-production"
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/api/check/health
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/api/check/liveness
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/api/check/readiness
+curl -k -X POST 			  https://edc-ikln-control.51.178.94.25.nip.io/management/v3/assets/request 			  -H "X-Api-Key: ikln-api-key-change-in-production" 			  -H "Content-Type: application/json" 			  -d '{
+				"@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+				"offset": 0,
+				"limit": 10
+			  }'
+curl -k -X POST 			  https://edc-mass-control.51.178.94.25.nip.io/management/v3/assets/request 			  -H "X-Api-Key: mass-api-key-change-in-production" 			  -H "Content-Type: application/json" 			  -d '{
+				"@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+				"offset": 0,
+				"limit": 10
+			  }'
+		export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella | grep ikln-edc
+			kubectl get pods -n umbrella | grep mass-edc
+IKLN_POD=$(kubectl get pods -n umbrella --no-headers | grep ikln-edc-controlplane | awk '{print $1}')
+			kubectl logs -n umbrella $IKLN_POD --tail=100
+kubectl exec -n umbrella ikln-edc-controlplane-db5b9485f-cmfbj -- env | grep -E "EDC_PARTICIPANT_ID|EDC_IAM_DID_WEB_USE_HTTPS|EDC_IAM_ISSUER_ID"
+		
+IKLN_POD=$(kubectl get pods -n umbrella --no-headers | grep ikln-edc-controlplane | awk '{print $1}')
+			kubectl logs -n umbrella $IKLN_POD --tail=100
+kubectl get pods -n umbrella | grep ikln-edc
+			kubectl get pods -n umbrella | grep mass-edc
+kubectl exec -n umbrella ikln-edc-controlplane-db5b9485f-vlrbj -- env | grep -E "EDC_PARTICIPANT_ID|EDC_IAM_DID_WEB_USE_HTTPS|EDC_IAM_ISSUER_ID"
+curl -X POST 'https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request'                            -H 'Content-Type: application/json'                                  -H 'X-API-KEY: ikln-api-key-change-in-production'                            -d '{
+															"@context": {
+															  "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+															},
+															"counterPartyAddress": "https://edc-mass-control.51.1
+					78.94.25.nip.io/api/v1/dsp",
+															"counterPartyId": "BPNL00000000MASS",
+															"protocol": "dataspace-protocol-http",
+															"querySpec": {
+															  "offset": 0,
+															  "limit": 100
+															}
+													  }' | jq '.'
+# Ver el pod de IKLN controlplane
+IKLN_POD=$(kubectl get pod -n umbrella -l app.kubernetes.io/instance=ikln-edc,app.kubernetes.io/component=controlplane -o jsonpath='{.items[0].metadata.name}')
+# Verificar variable crítica
+kubectl exec -n umbrella $IKLN_POD -- env | grep EDC_IAM_DID_WEB_USE_HTTPS
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+# Ver el pod de IKLN controlplane
+IKLN_POD=$(kubectl get pod -n umbrella -l app.kubernetes.io/instance=ikln-edc,app.kubernetes.io/component=controlplane -o jsonpath='{.items[0].metadata.name}')
+helm list -n umbrella
+kubectl get pods -n umbrella
+# 1. Configurar kubeconfig
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+# 2. Ver todos los namespaces
+kubectl get namespaces
+# 3. Ver todos los pods en namespace umbrella
+kubectl get pods -n umbrella
+# Verificar variable crítica en IKLN
+kubectl exec -n umbrella ikln-edc-controlplane-db5b9485f-vlrbj -- env | grep -E "EDC_IAM_DID_WEB_USE_HTTPS|EDC_PARTICIPANT_ID"
+# Verificar variable crítica en MASS  
+kubectl exec -n umbrella mass-edc-controlplane-74dbbf464c-mp2t9 -- env | grep -E "EDC_IAM_DID_WEB_USE_HTTPS|EDC_PARTICIPANT_ID"
+cd edc-redeploy/
+./redeploy-connectors.sh
+curl -k https://edc-mass-control.51.178.94.25.nip.io/.well-known/did.json
+curl -k http://edc-mass-control.51.178.94.25.nip.io/.well-known/did.json
+cd src/poc_next/
+./start.sh 
+cd projects/assembly/iflex/
+code .
+cd projects/assembly/tractus-x-umbrella
+code .
+cd charts/dataspace-connector-bundle/
+cd ..
+./deploy-ikln-connector.sh
+./deploy-mass-connector.sh
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml
+kubectl get pods -n umbrella | grep ikln
+kubectl logs -n umbrella -l app.kubernetes.io/component=controlplane -l app.kubernetes.io/instance=ikln-edc --tail=100
+kubectl get svc -n umbrella | grep ikln-edc-tractusx-connector-controlplane
+kubectl get ingress -n umbrella | grep ikln
+# Ver detalles completos
+kubectl describe ingress -n umbrella | grep -A 20 "edc-ikln-control"
+kubectl get endpoints -n umbrella | grep ikln-edc-tractusx-connector-controlplane
+# Test directo al pod (bypassing Ingress)
+kubectl exec -n umbrella ikln-edc-vault-0 -- wget -O- --timeout=5 http://ikln-edc-tractusx-connector-controlplane:8081/management/v3/assets/request   -H "x-api-key: ikln-api-key-change-in-production"   --post-data='{"@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"QuerySpec"}'
+kubectl get svc -n umbrella | grep ikln
+# Listar TODOS los pods de ikln para ver sus nombres exactos
+kubectl get pods -n umbrella | grep ikln
+# Luego obtén los logs del pod CONTROLPLANE (no vault, no postgresql)
+kubectl logs -n umbrella ikln-edc-controlplane-566fb8457b-pwvxg --tail=100
+# 1. Probar el endpoint de management (debería funcionar)
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/assets/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{"@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"QuerySpec"}'
+# 2. Ver logs de nginx ingress para ver el error real
+kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50 | grep ikln
+# Terminal 1: Seguir los logs del EDC en tiempo real
+kubectl logs -n umbrella ikln-edc-controlplane-566fb8457b-pwvxg -f
+# Terminal 2 (en otra ventana): Hacer una petición de catálogo
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }'
+[200~# Terminal 1: Seguir los logs del EDC en tiempo real
+kubectl logs -n umbrella ikln-edc-controlplane-566fb8457b-pwvxg -f
+# Terminal 1: Seguir los logs del EDC en tiempo real
+kubectl logs -n umbrella ikln-edc-controlplane-566fb8457b-pwvxg -f
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }' && kubectl logs -n umbrella ikln-edc-controlplane-566fb8457b-pwvxg --tail=50
+kubectl get pods -n portal | grep dim-wallet-proxy
+kubectl exec -n umbrella ikln-edc-vault-0 -- vault kv get secret/edc-wallet-secret
+kubectl exec -n umbrella ikln-edc-vault-0 -- vault kv get secret
+# Terminal 1: Ver logs del proxy en tiempo real
+kubectl logs -n portal dim-wallet-proxy-7fd5654d44-p5kcb -f
+# En una terminal, seguir los logs del controlplane de IKLN
+kubectl logs -n umbrella ikln-edc-controlplane-f9b8998d7-5l25h -f --tail=50
+# Hacer la petición y ver las últimas 100 líneas de log
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }' && echo && kubectl logs -n umbrella ikln-edc-controlplane-f9b8998d7-5l25h --tail=100 | grep -i -A 5 -B 5 "credential\|error\|exception\|empty\|optional"
+# Paso 1: Hacer la petición
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }'
+# Paso 2: Ver los últimos 50 logs inmediatamente después
+kubectl logs -n umbrella ikln-edc-controlplane-f9b8998d7-5l25h --tail=50
+# Ver logs desde los últimos 30 segundos sin filtrar
+kubectl logs -n umbrella ikln-edc-controlplane-f9b8998d7-5l25h --since=30s
+curl -k https://edc-ikln-control.51.178.94.25.nip.io/management/v3/catalog/request   -H "x-api-key: ikln-api-key-change-in-production"   -H "Content-Type: application/json"   -d '{
+    "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
+    "counterPartyAddress": "https://edc-mass-control.51.178.94.25.nip.io/api/v1/dsp",
+    "counterPartyId": "BPNL00000000MASS",
+    "protocol": "dataspace-protocol-http"
+  }' && sleep 2 && kubectl logs -n umbrella ikln-edc-controlplane-f9b8998d7-5l25h --since=5s
+kubectl set env deployment/ikln-edc-controlplane -n umbrella   TX_EDC_IAM_IATP_SKIP="true"
+kubectl set env deployment/mass-edc-controlplane -n umbrella   TX_EDC_IAM_IATP_SKIP="true"
+# Esperar a que los pods se reinicien
+kubectl get pods -n umbrella -w
+git status
+git origin
+git origin -v
+git remote -v
+git add dokumentuak/2026.05.06-Conectores.md 
+git commit -m "Documentado estado de los conectores antes de eliminarlos y volver a desplegarlos"
+git push
+export KUBECONFIG=/home/xmendialdua/projects/assembly/tractus-x-umbrella/kubeconfig.yaml && kubectl delete replicaset -n umbrella ikln-edc-dataplane-5c9b9f5c88 ikln-edc-dataplane-65d9755c99 ikln-edc-dataplane-6677695fbb ikln-edc-dataplane-7596647f58 ikln-edc-dataplane-856c959846 ikln-edc-dataplane-f55bdbbb 
+cd src/poc_next/
+./start.sh 
+cd  projects/assembly/
+ls
+cd tractus-x-umbrella
+code .
+cd projects/assembly/iflex/
+code .
+poetry install
+sudo apt install python3-poetry
+cp .env.example .env
+cd earruti-essad-0fe6a58ae476/
+cp .env.example .env
+sudo apt install python3-poetry
+poetry run essad-mock
+poetry install
+poetry run essad-mock
+poetry run essad
+poetry add aiosqlite
+poetry run essad
+poetry install
+poetry run essad
+poetry run python -c "from essad.config import settings; print('Database URL:', settings.database_url)"
+docker compose up --build
+docker compose up
+docker --help
+./scripts/start-demo.sh
+chmod +x scripts/*.sh
+./scripts/start-demo.sh
+./scripts/status-demo.sh
+./scripts/logs-demo.sh
+./scripts/stop-demo.sh
+./scripts/start-demo.sh
+poetry run essad
+docker-compose down
+docker ps -a | grep -E "(nahia-mock|iatp-mock)"
+docker rm nahia-mock iatp-mock
+docker-compose up --build
+docker ps -a | grep -E "(provider-connector|consumer-connector|essad-api|demo-ui)" | awk '{print $1}' | xargs -r docker rm
+docker-compose up
+docker rm essad-init 2>/dev/null || docker ps -a | grep essad-init | awk '{print $1}' | xargs -r docker rm
+docker-compose up
+cd projects/
+cd ubikare/
+ls
+mkdir bitbucket-essad
+cd bitbucket-essad/
+git clone https://xmendialdua@bitbucket.org/earruti/essad.git
+cd ..
+mkdir bitbucket-essad-download
+cd bitbucket-essad-download/
+code .
+ls
+clear
+cd ..
+ls
+cd bitbucket-essad
+git clone https://xmendialdua@bitbucket.org/earruti/essad.git
+ls
+cd essad/
+ls
+code .
