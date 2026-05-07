@@ -59,7 +59,7 @@ tractusx-connector:
   controlplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      EDC_IAM_DID_WEB_USE_HTTPS: false
+      EDC_IAM_DID_WEB_USE_HTTPS: true
       # BDRS configuration with new property names (EDC v0.11.1+)
       TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
       TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
@@ -70,6 +70,14 @@ tractusx-connector:
     endpoints:
       management:
         authKey: ikln-api-key-change-in-production
+    # Recursos reducidos para evitar problemas de CPU en el cluster
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
     ingresses:
       - enabled: true
         hostname: "edc-ikln-control.51.178.94.25.nip.io"
@@ -84,10 +92,18 @@ tractusx-connector:
   dataplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      EDC_IAM_DID_WEB_USE_HTTPS: false
+      EDC_IAM_DID_WEB_USE_HTTPS: true
       EDC_DATAPLANE_TOKEN_SIGNING_ALGORITHM: "ES256K"
       EDC_TRANSFER_PROXY_TOKEN_SIGNER_PRIVATEKEY_ALIAS: "tokenSignerPrivateKey"
       EDC_TRANSFER_PROXY_TOKEN_VERIFIER_PUBLICKEY_ALIAS: "tokenSignerPublicKey"
+    # Recursos reducidos para evitar problemas de CPU en el cluster
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
     ingresses:
       - enabled: true
         hostname: "edc-ikln-data.51.178.94.25.nip.io"
@@ -139,4 +155,15 @@ postgresql:
     username: "user"
     password: "dbpassworddataconsumerone"
     postgresPassword: "dbpassworddataconsumerone"
- 
+  # Recursos reducidos para evitar problemas de CPU en el cluster
+  primary:
+    resources:
+      limits:
+        cpu: 150m
+        memory: 192Mi
+        ephemeral-storage: 1Gi
+      requests:
+        cpu: 50m
+        memory: 96Mi
+        ephemeral-storage: 50Mi
+
