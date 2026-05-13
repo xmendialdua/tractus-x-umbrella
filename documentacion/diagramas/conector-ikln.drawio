@@ -1,0 +1,134 @@
+<mxfile host="65bd71144e">
+    <diagram id="conector-ikln" name="IKLN Connector">
+        <mxGraphModel dx="1970" dy="718" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="main-container" value="🔷 IKLN EDC CONNECTOR (Consumer)&#xa;Namespace: umbrella&#xa;BPN: BPNL00000002IKLN&#xa;DID: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN" style="swimlane;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1976d2;strokeWidth=3;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="-390" y="40" width="1220" height="1050" as="geometry"/>
+                </mxCell>
+                <mxCell id="control-plane" value="Control Plane" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;strokeWidth=2;" parent="main-container" vertex="1">
+                    <mxGeometry x="20" y="40" width="500" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="cp-management" value="Management API&#xa;:8081&#xa;API Key: ikln-api-key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1976d2;" parent="control-plane" vertex="1">
+                    <mxGeometry x="20" y="40" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cp-dsp" value="DSP Protocol API&#xa;:8084&#xa;Catalog &amp; Negotiation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1976d2;" parent="control-plane" vertex="1">
+                    <mxGeometry x="180" y="40" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cp-public" value="Public API&#xa;:8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1976d2;" parent="control-plane" vertex="1">
+                    <mxGeometry x="340" y="40" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cp-logic" value="EDC Core Logic&#xa;Catalog Discovery&#xa;Contract Negotiation&#xa;Policy Evaluation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90caf9;strokeColor=#1976d2;fontStyle=1;" parent="control-plane" vertex="1">
+                    <mxGeometry x="100" y="150" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-plane" value="Data Plane" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#558b2f;strokeWidth=2;" parent="main-container" vertex="1">
+                    <mxGeometry x="540" y="40" width="500" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp-public" value="Public API&#xa;:8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5e1a5;strokeColor=#558b2f;" parent="data-plane" vertex="1">
+                    <mxGeometry x="20" y="40" width="110" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp-control" value="Control API&#xa;:8081" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5e1a5;strokeColor=#558b2f;" parent="data-plane" vertex="1">
+                    <mxGeometry x="150" y="40" width="110" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp-proxy" value="Data Proxy API&#xa;:8186" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5e1a5;strokeColor=#558b2f;" parent="data-plane" vertex="1">
+                    <mxGeometry x="280" y="40" width="110" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp-logic" value="Data Transfer Logic&#xa;HttpData, S3, Azure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#aed581;strokeColor=#558b2f;fontStyle=1;" parent="data-plane" vertex="1">
+                    <mxGeometry x="100" y="150" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="config" value="Configuration &amp; Secrets" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;strokeWidth=2;" parent="main-container" vertex="1">
+                    <mxGeometry x="20" y="340" width="500" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="config-env" value="Environment Variables&#xa;EDC_IAM_DID_WEB_USE_HTTPS=false&#xa;TX_IAM_IATP_CREDENTIALSERVICE_URL&#xa;TX_EDC_IAM_IATP_BDRS_SERVER_URL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff59d;strokeColor=#f9a825;align=left;" parent="config" vertex="1">
+                    <mxGeometry x="20" y="40" width="460" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="storage" value="Storage Layer" style="swimlane;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#e64a19;strokeWidth=2;" parent="main-container" vertex="1">
+                    <mxGeometry x="540" y="340" width="500" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgres" value="PostgreSQL&#xa;:5432&#xa;emptyDir&#xa;edc_asset&#xa;edc_contract&#xa;edc_policy" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffab91;strokeColor=#e64a19;" parent="storage" vertex="1">
+                    <mxGeometry x="40" y="40" width="180" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="vault" value="Vault&#xa;:8200&#xa;emptyDir&#xa;Keys &amp; Secrets" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffab91;strokeColor=#e64a19;" parent="storage" vertex="1">
+                    <mxGeometry x="280" y="40" width="180" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="external" value="External Dependencies" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#7b1fa2;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" vertex="1">
+                    <mxGeometry x="20" y="560" width="1020" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="portal" value="Portal&#xa;namespace: portal&#xa;BDRS, Wallet, IAM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ce93d8;strokeColor=#7b1fa2;" parent="external" vertex="1">
+                    <mxGeometry x="50" y="100" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="mass" value="MASS EDC&#xa;namespace: umbrella&#xa;Provider Connector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ce93d8;strokeColor=#7b1fa2;" parent="external" vertex="1">
+                    <mxGeometry x="410" y="100" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-management-logic" value="Control" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeColor=#1976d2;strokeWidth=2;" parent="main-container" source="cp-management" target="cp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-dsp-logic" value="Protocol" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1976d2;strokeWidth=2;" parent="main-container" source="cp-dsp" target="cp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-public-logic" value="Query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#1976d2;strokeWidth=2;" parent="main-container" source="cp-public" target="cp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-dp-control-logic" value="Transfer Control" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;strokeColor=#558b2f;strokeWidth=2;" parent="main-container" source="dp-control" target="dp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-dp-proxy-logic" value="Data Stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;strokeColor=#558b2f;strokeWidth=2;" parent="main-container" source="dp-proxy" target="dp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-to-dp" value="Transfer Request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1976d2;strokeWidth=3;" parent="main-container" source="cp-logic" target="dp-control" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-postgres" value="Persist State" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.145;entryY=0;entryDx=0;entryDy=4.35;entryPerimeter=0;strokeColor=#e64a19;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-logic" target="postgres" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-cp-vault" value="Secrets" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.145;entryY=0;entryDx=0;entryDy=4.35;entryPerimeter=0;strokeColor=#e64a19;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-logic" target="vault" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-dp-vault" value="Token Signing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.855;entryY=0;entryDx=0;entryDy=4.35;entryPerimeter=0;strokeColor=#e64a19;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="dp-logic" target="vault" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-config-cp" value="Configure" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#f9a825;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="config-env" target="cp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-config-dp" value="Configure" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#f9a825;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="config-env" target="dp-logic" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-dsp-mass" value="DSP Protocol :8084" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7b1fa2;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-dsp" target="mass" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="270" y="490"/>
+                            <mxPoint x="480" y="490"/>
+                            <mxPoint x="480" y="610"/>
+                            <mxPoint x="580" y="610"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge-cp-portal-did" value="Resolve DIDs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeColor=#7b1fa2;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-logic" target="portal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="120" y="520"/>
+                            <mxPoint x="135" y="520"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge-cp-portal-bpn" value="BPN→DID" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7b1fa2;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-logic" target="portal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="195" y="490"/>
+                            <mxPoint x="210" y="490"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge-cp-portal-cred" value="Credentials" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.15;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=#7b1fa2;strokeWidth=2;dashed=1;dashPattern=5 5;" parent="main-container" source="cp-logic" target="portal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="165" y="510"/>
+                            <mxPoint x="285" y="510"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
