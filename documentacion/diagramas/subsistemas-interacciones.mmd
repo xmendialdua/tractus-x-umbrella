@@ -1,0 +1,107 @@
+graph LR
+    subgraph External["🌐 External Systems"]
+        User[User Browser]
+        ExternalEDC[External EDC<br/>Connectors]
+    end
+    
+    subgraph Portal["🔷 PORTAL SUBSYSTEM<br/>Namespace: portal<br/>Operator: BPNL00000003CRHK"]
+        PortalUI[Portal<br/>Frontend]
+        PortalAPI[Portal<br/>Backend APIs]
+        
+        subgraph Auth["Authentication"]
+            IDP[Central IDP<br/>Keycloak]
+        end
+        
+        subgraph Trust["Trust & Identity"]
+            Wallet[DIM Wallet<br/>Stub]
+            WProxy[Wallet<br/>Proxy]
+            BDRS[BDRS<br/>BPN→DID]
+        end
+        
+        subgraph Data["Business Data"]
+            BPDM[BPDM<br/>Services]
+            Discovery[Discovery<br/>Services]
+        end
+    end
+    
+    subgraph IKLN["🔷 IKLN CONNECTOR SUBSYSTEM<br/>Namespace: umbrella<br/>Consumer: BPNL00000002IKLN"]
+        IKLNMgmt[Management<br/>API]
+        IKLNCP[Control<br/>Plane]
+        IKLNDP[Data<br/>Plane]
+        IKLNApps[MASS<br/>Dashboard]
+    end
+    
+    subgraph MASS["🟢 MASS CONNECTOR SUBSYSTEM<br/>Namespace: umbrella<br/>Provider: BPNL00000000MASS"]
+        MASSMgmt[Management<br/>API]
+        MASSCP[Control<br/>Plane]
+        MASSDP[Data<br/>Plane]
+        MASSData[Data<br/>Sources]
+    end
+    
+    subgraph Ingress["🔴 INGRESS LAYER<br/>NGINX - 51.178.94.25"]
+        IngressCtrl[Ingress<br/>Controller]
+    end
+    
+    %% External to Ingress
+    User -->|HTTPS| IngressCtrl
+    ExternalEDC -->|HTTPS/DSP| IngressCtrl
+    
+    %% Ingress Routing
+    IngressCtrl -->|portal.*| PortalUI
+    IngressCtrl -->|centralidp.*| IDP
+    IngressCtrl -->|edc-ikln-control.*| IKLNMgmt
+    IngressCtrl -->|edc-mass-control.*| MASSMgmt
+    
+    %% Portal Internal
+    PortalUI -->|API| PortalAPI
+    PortalAPI -->|Auth| IDP
+    PortalAPI -->|Business Partners| BPDM
+    PortalAPI -->|Register Connectors| Discovery
+    
+    %% Portal Trust Services
+    Wallet -->|Proxy| WProxy
+    BDRS -->|Query DIDs| Wallet
+    
+    %% IKLN Internal
+    IKLNMgmt -->|Manage| IKLNCP
+    IKLNCP -->|Transfer| IKLNDP
+    IKLNApps -->|Consume Data| IKLNDP
+    
+    %% MASS Internal  
+    MASSMgmt -->|Manage| MASSCP
+    MASSCP -->|Transfer| MASSDP
+    MASSDP -->|Source Data| MASSData
+    
+    %% IKLN to Portal
+    IKLNCP -.->|1. Resolve BPN→DID| BDRS
+    IKLNCP -.->|2. Get Credentials| WProxy
+    IKLNCP -.->|3. Authenticate| IDP
+    
+    %% IKLN to MASS
+    IKLNCP ==>|4. Catalog Request<br/>DSP Protocol| MASSCP
+    IKLNCP ==>|5. Contract Negotiation| MASSCP
+    IKLNDP ==>|6. Data Transfer| MASSDP
+    
+    %% MASS to Portal
+    MASSCP -.->|7. Verify BPN→DID| BDRS
+    MASSCP -.->|8. Verify Credentials| WProxy
+    MASSCP -.->|9. Validate Policy| IDP
+    
+    %% Styling
+    classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef portal fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef ikln fill:#bbdefb,stroke:#1565c0,stroke-width:3px
+    classDef mass fill:#c8e6c9,stroke:#388e3c,stroke-width:3px
+    classDef ingress fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    classDef auth fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef trust fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef data fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    
+    class User,ExternalEDC external
+    class PortalUI,PortalAPI portal
+    class IKLNMgmt,IKLNCP,IKLNDP,IKLNApps ikln
+    class MASSMgmt,MASSCP,MASSDP,MASSData mass
+    class IngressCtrl ingress
+    class IDP auth
+    class Wallet,WProxy,BDRS trust
+    class BPDM,Discovery data

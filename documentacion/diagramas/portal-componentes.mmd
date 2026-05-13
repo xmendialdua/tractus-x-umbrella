@@ -1,0 +1,115 @@
+graph TB
+    subgraph Portal["🔷 CATENA-X PORTAL - Namespace: portal"]
+        subgraph Frontend["Frontend & UI"]
+            PortalUI[Portal Frontend<br/>:8080]
+            RegistrationUI[Registration Service<br/>:8080]
+            AssetsUI[Assets Service<br/>:8080]
+        end
+        
+        subgraph Backend["Backend Services"]
+            AdminAPI[Administration API<br/>:8080]
+            RegistrationAPI[Registration API<br/>:8080]
+            NotificationAPI[Notification API<br/>:8080]
+            ProvisioningAPI[Provisioning API<br/>:8080]
+            MarketplaceAPI[Marketplace API<br/>:8080]
+            ServicesAPI[Services API<br/>:8080]
+        end
+        
+        subgraph IDP["🔐 Identity Providers"]
+            CentralIDP[Central IDP<br/>Keycloak<br/>:8080]
+            SharedIDP[Shared IDP<br/>Keycloak<br/>:8080]
+        end
+        
+        subgraph SSI["🔒 SSI & Trust Layer<br/>Port :8080 | Issuer: BPNL00000003CRHK"]
+            WalletStub[DIM Wallet Stub<br/>:8080<br/>DIDs Management]
+            WalletProxy[DIM Wallet Proxy<br/>:8080<br/>Middleware]
+            BDRS[BDRS Server<br/>:8082 Directory<br/>:8081 Management<br/>BPN→DID Resolution]
+            CredIssuer[Credential Issuer<br/>:8080<br/>VC Issuance]
+        end
+        
+        subgraph BPDM["📊 Business Partner Data Management"]
+            BPDMPool[BPDM Pool<br/>:8080]
+            BPDMGate[BPDM Gate<br/>:8080]
+            BPDMOrch[BPDM Orchestrator<br/>:8080]
+        end
+        
+        subgraph Discovery["🔍 Discovery Services"]
+            BPNDisc[BPN Discovery<br/>:8080]
+            DiscFinder[Discovery Finder<br/>:8080]
+            SDFactory[Self-Description Factory<br/>:8080]
+        end
+        
+        subgraph Storage["💾 Storage Layer"]
+            PortalDB[(Portal<br/>PostgreSQL<br/>:5432<br/>5Gi)]
+            BPDMDB[(BPDM<br/>PostgreSQL<br/>:5432<br/>3Gi)]
+            WalletDB[(Wallet<br/>PostgreSQL<br/>:5432)]
+            CentralIDPDB[(Central IDP<br/>PostgreSQL<br/>:5432<br/>3Gi)]
+            SharedIDPDB[(Shared IDP<br/>PostgreSQL<br/>:5432<br/>2Gi)]
+        end
+        
+        subgraph Support["🛠️ Support Services"]
+            PGAdmin[PGAdmin4<br/>:80]
+            SMTP[SMTP4Dev<br/>:25]
+        end
+    end
+    
+    %% Frontend to Backend
+    PortalUI -->|API Calls| AdminAPI
+    PortalUI -->|API Calls| MarketplaceAPI
+    RegistrationUI -->|API Calls| RegistrationAPI
+    
+    %% Backend to IDP
+    AdminAPI -->|OAuth2/OIDC| CentralIDP
+    RegistrationAPI -->|OAuth2/OIDC| CentralIDP
+    ProvisioningAPI -->|Create Realms| SharedIDP
+    
+    %% Backend to BPDM
+    AdminAPI -->|Partner Data| BPDMGate
+    BPDMGate -->|Pool API| BPDMPool
+    BPDMPool -->|Orchestrate| BPDMOrch
+    
+    %% Backend to SSI
+    AdminAPI -->|Issue Credentials| CredIssuer
+    CredIssuer -->|Store VCs| WalletStub
+    
+    %% SSI Internal
+    WalletProxy -->|Proxy| WalletStub
+    BDRS -->|Resolve DIDs| WalletStub
+    
+    %% Backend to Discovery
+    AdminAPI -->|Register Connectors| BPNDisc
+    BPNDisc -->|Query| DiscFinder
+    AdminAPI -->|Self Descriptions| SDFactory
+    
+    %% Database Connections
+    AdminAPI -.->|Data| PortalDB
+    RegistrationAPI -.->|Data| PortalDB
+    NotificationAPI -.->|Data| PortalDB
+    BPDMPool -.->|Data| BPDMDB
+    WalletStub -.->|Data| WalletDB
+    CentralIDP -.->|Data| CentralIDPDB
+    SharedIDP -.->|Data| SharedIDPDB
+    
+    %% Support Services
+    PGAdmin -.->|Manage| PortalDB
+    PGAdmin -.->|Manage| BPDMDB
+    ProvisioningAPI -->|Send Emails| SMTP
+    
+    %% Styling
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef backend fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef idp fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef ssi fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef bpdm fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef discovery fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    classDef support fill:#fafafa,stroke:#616161,stroke-width:1px
+    
+    class PortalUI,RegistrationUI,AssetsUI frontend
+    class AdminAPI,RegistrationAPI,NotificationAPI,ProvisioningAPI,MarketplaceAPI,ServicesAPI backend
+    class CentralIDP,SharedIDP idp
+    class WalletStub,WalletProxy,BDRS,CredIssuer ssi
+    class BPDMPool,BPDMGate,BPDMOrch bpdm
+    class BPNDisc,DiscFinder,SDFactory discovery
+    class PortalDB,BPDMDB,WalletDB,CentralIDPDB,SharedIDPDB storage
+    class PGAdmin,SMTP support

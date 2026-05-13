@@ -1,0 +1,72 @@
+sequenceDiagram
+    autonumber
+    
+    participant User as MASS Dashboard<br/>(Consumer App)
+    participant IKLNMgmt as IKLN<br/>Management API<br/>:8081
+    participant IKLNCP as IKLN<br/>Control Plane<br/>EDC Core
+    participant BDRS as BDRS Server<br/>portal ns<br/>:8082
+    participant WProxy as DIM Wallet<br/>Proxy<br/>portal ns
+    participant Wallet as DIM Wallet<br/>Stub<br/>portal ns
+    participant MASSCP as MASS<br/>Control Plane<br/>EDC Core
+    participant MASSAssets as MASS<br/>Asset Store<br/>PostgreSQL
+    
+    rect rgb(240, 248, 255)
+        Note over User,IKLNMgmt: Paso 1: Inicio de Catalog Request
+        User->>IKLNMgmt: POST /management/v3/catalog/request<br/>Header: X-API-KEY<br/>Body: {counterPartyId: "BPNL00000000MASS"}
+        IKLNMgmt->>IKLNCP: Forward catalog request
+    end
+    
+    rect rgb(255, 250, 240)
+        Note over IKLNCP,BDRS: Paso 2: Resolución BPN → DID
+        IKLNCP->>BDRS: GET /api/directory?bpn=BPNL00000000MASS
+        BDRS-->>IKLNCP: DID: did:web:ssi-dim-wallet-stub...:BPNL00000000MASS
+        
+        Note over IKLNCP,Wallet: Paso 3: Obtener DID Document
+        IKLNCP->>Wallet: GET /BPNL00000000MASS/did.json<br/>(HTTP - EDC_IAM_DID_WEB_USE_HTTPS=false)
+        Wallet-->>IKLNCP: DID Document<br/>{verificationMethod, service endpoints}
+    end
+    
+    rect rgb(255, 245, 255)
+        Note over IKLNCP,WProxy: Paso 4: Obtener Credenciales (IATP)
+        IKLNCP->>WProxy: POST /oauth/token<br/>grant_type=client_credentials<br/>client_id=BPNL00000002IKLN<br/>scope=openid org.eclipse.tractusx.vc.type:MembershipCredential
+        WProxy->>Wallet: Get wallet for BPNL00000002IKLN
+        Wallet-->>WProxy: Wallet data + VCs
+        WProxy->>WProxy: Create Verifiable Presentation (VP)<br/>Sign with private key<br/>Include VCs (Membership, Framework)
+        WProxy-->>IKLNCP: Access Token (JWT)<br/>VP with embedded VCs
+    end
+    
+    rect rgb(240, 255, 240)
+        Note over IKLNCP,MASSCP: Paso 5: Catalog Request via DSP Protocol
+        IKLNCP->>MASSCP: POST /api/v1/dsp/catalog/request<br/>Header: Authorization: Bearer <VP-JWT><br/>Body: {@context, @type: "CatalogRequestMessage"}
+        
+        Note over MASSCP: Paso 6: Validación del Consumer
+        MASSCP->>WProxy: Verify VP signature
+        WProxy->>Wallet: GET /BPNL00000002IKLN/did.json
+        Wallet-->>WProxy: DID Document with public key
+        WProxy-->>MASSCP: Signature valid ✓
+        
+        MASSCP->>MASSCP: Validate VC claims:<br/>- Membership: active<br/>- FrameworkAgreement: DataExchangeGovernance:1.0<br/>- BPN: BPNL00000002IKLN
+        
+        Note over MASSCP,MASSAssets: Paso 7: Recuperar Assets & Policies
+        MASSCP->>MASSAssets: SELECT * FROM edc_asset<br/>WHERE id IN (accessible_assets)
+        MASSAssets-->>MASSCP: Assets: [data-publication, partner-data]
+        
+        MASSCP->>MASSAssets: SELECT * FROM edc_policy<br/>WHERE asset_id IN (assets)
+        MASSAssets-->>MASSCP: Policies with constraints<br/>(Membership, UsagePurpose, etc.)
+    end
+    
+    rect rgb(255, 248, 240)
+        Note over MASSCP,IKLNCP: Paso 8: Catalog Response
+        MASSCP-->>IKLNCP: 200 OK<br/>Catalog with:<br/>- dcat:Dataset (id, name, description)<br/>- odrl:Policy (permissions, constraints)<br/>- dcat:Distribution (formats)<br/>- dcat:DataService (endpoint URLs)
+    end
+    
+    rect rgb(240, 248, 255)
+        Note over IKLNCP,User: Paso 9: Respuesta al Consumer
+        IKLNCP-->>IKLNMgmt: Catalog data processed
+        IKLNMgmt-->>User: 200 OK<br/>JSON Catalog:<br/>{<br/>  "@id": "catalog-id",<br/>  "dcat:dataset": [{<br/>    "@id": "aaa",<br/>    "name": "aaa",<br/>    "odrl:hasPolicy": {...}<br/>  }]<br/>}
+    end
+    
+    rect rgb(255, 240, 245)
+        Note over User: Paso 10: Usuario visualiza catálogo
+        User->>User: Display available datasets<br/>Show policies and constraints<br/>Enable contract negotiation
+    end

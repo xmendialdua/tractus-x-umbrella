@@ -262,6 +262,90 @@ sequenceDiagram
 
 ---
 
+## Diagramas Detallados Adicionales
+
+### 1. Componentes del Portal (Namespace: portal)
+
+Diagrama detallado de todos los servicios desplegados en el namespace `portal`:
+
+📄 **Ver diagrama:** [diagramas/portal-componentes.mmd](diagramas/portal-componentes.mmd)
+
+Incluye:
+- Frontend y UI Services
+- Backend APIs
+- Identity Providers (Keycloak)
+- SSI & Trust Layer (Wallet, BDRS, Credential Issuer)
+- BPDM Services
+- Discovery Services
+- Storage Layer (PostgreSQL databases)
+
+---
+
+### 2. Arquitectura del Conector IKLN
+
+Diagrama interno del conector IKLN (Consumer):
+
+📄 **Ver diagrama:** [diagramas/conector-ikln.mmd](diagramas/conector-ikln.mmd)
+
+Incluye:
+- Control Plane (Management API, DSP Protocol)
+- Data Plane (Data Transfer)
+- PostgreSQL y Vault
+- Configuración y variables de entorno
+- Dependencias externas
+
+---
+
+### 3. Arquitectura del Conector MASS
+
+Diagrama interno del conector MASS (Provider):
+
+📄 **Ver diagrama:** [diagramas/conector-mass.mmd](diagramas/conector-mass.mmd)
+
+Incluye:
+- Control Plane (Assets, Policies, DSP Protocol)
+- Data Plane (Data Transfer)
+- PostgreSQL y Vault
+- Data Sources (Dashboard, Sharepoint, Partner Data)
+- Configuración y variables de entorno
+
+---
+
+### 4. Diagrama de Subsistemas e Interacciones
+
+Vista de alto nivel de las interacciones entre Portal, IKLN y MASS:
+
+📄 **Ver diagrama:** [diagramas/subsistemas-interacciones.mmd](diagramas/subsistemas-interacciones.mmd)
+
+Muestra:
+- Ingress Layer y enrutamiento
+- Portal Subsystem (Auth, Trust, Data)
+- IKLN Connector Subsystem (Consumer)
+- MASS Connector Subsystem (Provider)
+- Flujo numerado de interacciones (1-9)
+
+---
+
+### 5. Diagrama de Secuencia: Catalog Request
+
+Secuencia completa de una petición de catálogo desde IKLN a MASS:
+
+📄 **Ver diagrama:** [diagramas/secuencia-catalog-request.mmd](diagramas/secuencia-catalog-request.mmd)
+
+Pasos detallados:
+1. Inicio de Catalog Request desde aplicación consumer
+2. Resolución BPN → DID via BDRS
+3. Obtención de DID Document
+4. Obtención de Credenciales (IATP/VP)
+5. Catalog Request via DSP Protocol
+6. Validación del Consumer (VP signature + VCs)
+7. Recuperación de Assets & Policies
+8. Catalog Response
+9. Respuesta al Consumer
+10. Visualización en aplicación
+
+---
+
 ## Próximos Pasos
 
 Continúa con:

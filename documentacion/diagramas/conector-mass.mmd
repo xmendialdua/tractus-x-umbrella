@@ -1,0 +1,98 @@
+graph TB
+    subgraph MASS["🟢 MASS EDC CONNECTOR (Provider)<br/>Namespace: umbrella<br/>BPN: BPNL00000000MASS<br/>DID: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"]
+        
+        subgraph ControlPlane["Control Plane"]
+            CPManagement[Management API<br/>:8081<br/>API Key: mass-api-key]
+            CPDSP[DSP Protocol API<br/>:8084<br/>Catalog & Negotiation]
+            CPPublic[Public API<br/>:8080]
+            CPMetrics[Metrics<br/>:9090]
+            
+            CPLogic[EDC Core Logic<br/>Catalog Publishing<br/>Contract Validation<br/>Policy Enforcement]
+            
+            Assets[Asset Management<br/>data-publication<br/>partner-data]
+            Policies[Policy Definitions<br/>Membership<br/>FrameworkAgreement<br/>UsagePurpose]
+        end
+        
+        subgraph DataPlane["Data Plane"]
+            DPPublic[Public API<br/>:8080]
+            DPControl[Control API<br/>:8081]
+            DPMetrics[Metrics<br/>:9090]
+            DPProxy[Data Proxy API<br/>:8186]
+            
+            DPLogic[Data Transfer Logic<br/>HttpData, S3, Azure<br/>ProxyHttpData]
+        end
+        
+        subgraph Config["Configuration & Secrets"]
+            ConfigEnv[Environment Variables<br/>EDC_IAM_DID_WEB_USE_HTTPS=false<br/>TX_IAM_IATP_CREDENTIALSERVICE_URL<br/>TX_EDC_IAM_IATP_BDRS_SERVER_URL]
+            CustomCA[Custom CA Certificates<br/>tractus-x-ca.crt]
+        end
+        
+        subgraph Storage["Storage Layer"]
+            Postgres[(PostgreSQL<br/>:5432<br/>emptyDir<br/>edc_asset<br/>edc_contract<br/>edc_policy)]
+            Vault[Vault<br/>:8200<br/>emptyDir<br/>Keys & Secrets]
+        end
+        
+        subgraph Backend["Data Sources"]
+            Dashboard[MASS Dashboard<br/>data-publication]
+            Sharepoint[MASS Sharepoint<br/>Shared files & folders]
+            PartnerData[Partner Data<br/>partner-data endpoint]
+        end
+        
+        subgraph External["External Dependencies"]
+            Portal[Portal<br/>namespace: portal]
+            IKLN[IKLN EDC<br/>namespace: umbrella]
+        end
+    end
+    
+    %% Control Plane Internals
+    CPManagement -->|Manage| Assets
+    CPManagement -->|Define| Policies
+    Assets -->|Register| CPLogic
+    Policies -->|Enforce| CPLogic
+    CPDSP -->|Protocol| CPLogic
+    CPPublic -->|Query| CPLogic
+    
+    %% Data Plane Internals
+    DPControl -->|Transfer Control| DPLogic
+    DPProxy -->|Data Stream| DPLogic
+    
+    %% Control to Data Plane
+    CPLogic -->|Transfer Request| DPControl
+    
+    %% Data Sources
+    DPLogic -->|Pull Data| Dashboard
+    DPLogic -->|Pull Data| Sharepoint
+    DPLogic -->|Pull Data| PartnerData
+    
+    %% Storage Connections
+    CPLogic -.->|Persist State| Postgres
+    CPLogic -.->|Secrets| Vault
+    DPLogic -.->|Token Signing| Vault
+    
+    %% Configuration
+    ConfigEnv -.->|Configure| CPLogic
+    ConfigEnv -.->|Configure| DPLogic
+    CustomCA -.->|Trust| CPLogic
+    
+    %% External Connections
+    CPDSP -.->|Receive Requests :8084| IKLN
+    CPLogic -.->|Verify DIDs| Portal
+    CPLogic -.->|BPN→DID| Portal
+    CPLogic -.->|Verify Credentials| Portal
+    
+    %% Styling
+    classDef controlplane fill:#c8e6c9,stroke:#388e3c,stroke-width:3px
+    classDef dataplane fill:#a5d6a7,stroke:#2e7d32,stroke-width:3px
+    classDef config fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    classDef storage fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    classDef backend fill:#b2dfdb,stroke:#00796b,stroke-width:2px
+    classDef external fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
+    classDef assetspolicies fill:#f0f4c3,stroke:#9e9d24,stroke-width:2px
+    
+    class CPManagement,CPDSP,CPPublic,CPMetrics,CPLogic controlplane
+    class DPPublic,DPControl,DPMetrics,DPProxy,DPLogic dataplane
+    class ConfigEnv,CustomCA config
+    class Postgres,Vault storage
+    class Dashboard,Sharepoint,PartnerData backend
+    class Portal,IKLN external
+    class Assets,Policies assetspolicies

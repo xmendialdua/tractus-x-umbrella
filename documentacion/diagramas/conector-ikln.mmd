@@ -1,0 +1,77 @@
+graph TB
+    subgraph IKLN["🔷 IKLN EDC CONNECTOR (Consumer)<br/>Namespace: umbrella<br/>BPN: BPNL00000002IKLN<br/>DID: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN"]
+        
+        subgraph ControlPlane["Control Plane"]
+            CPManagement[Management API<br/>:8081<br/>API Key: ikln-api-key]
+            CPDSP[DSP Protocol API<br/>:8084<br/>Catalog & Negotiation]
+            CPPublic[Public API<br/>:8080]
+            CPMetrics[Metrics<br/>:9090]
+            
+            CPLogic[EDC Core Logic<br/>Catalog Discovery<br/>Contract Negotiation<br/>Policy Evaluation]
+        end
+        
+        subgraph DataPlane["Data Plane"]
+            DPPublic[Public API<br/>:8080]
+            DPControl[Control API<br/>:8081]
+            DPMetrics[Metrics<br/>:9090]
+            DPProxy[Data Proxy API<br/>:8186]
+            
+            DPLogic[Data Transfer Logic<br/>HttpData, S3, Azure]
+        end
+        
+        subgraph Config["Configuration & Secrets"]
+            ConfigEnv[Environment Variables<br/>EDC_IAM_DID_WEB_USE_HTTPS=false<br/>TX_IAM_IATP_CREDENTIALSERVICE_URL<br/>TX_EDC_IAM_IATP_BDRS_SERVER_URL]
+            CustomCA[Custom CA Certificates<br/>tractus-x-ca.crt]
+        end
+        
+        subgraph Storage["Storage Layer"]
+            Postgres[(PostgreSQL<br/>:5432<br/>emptyDir<br/>edc_asset<br/>edc_contract<br/>edc_policy)]
+            Vault[Vault<br/>:8200<br/>emptyDir<br/>Keys & Secrets]
+        end
+        
+        subgraph External["External Dependencies"]
+            Portal[Portal<br/>namespace: portal]
+            MASS[MASS EDC<br/>namespace: umbrella]
+        end
+    end
+    
+    %% Control Plane Internals
+    CPManagement -->|Control| CPLogic
+    CPDSP -->|Protocol| CPLogic
+    CPPublic -->|Query| CPLogic
+    
+    %% Data Plane Internals
+    DPControl -->|Transfer Control| DPLogic
+    DPProxy -->|Data Stream| DPLogic
+    
+    %% Control to Data Plane
+    CPLogic -->|Transfer Request| DPControl
+    
+    %% Storage Connections
+    CPLogic -.->|Persist State| Postgres
+    CPLogic -.->|Secrets| Vault
+    DPLogic -.->|Token Signing| Vault
+    
+    %% Configuration
+    ConfigEnv -.->|Configure| CPLogic
+    ConfigEnv -.->|Configure| DPLogic
+    CustomCA -.->|Trust| CPLogic
+    
+    %% External Connections
+    CPDSP -.->|DSP Protocol :8084| MASS
+    CPLogic -.->|Resolve DIDs| Portal
+    CPLogic -.->|BPN→DID| Portal
+    CPLogic -.->|Credentials| Portal
+    
+    %% Styling
+    classDef controlplane fill:#bbdefb,stroke:#1976d2,stroke-width:3px
+    classDef dataplane fill:#c5e1a5,stroke:#558b2f,stroke-width:3px
+    classDef config fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    classDef storage fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    classDef external fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
+    
+    class CPManagement,CPDSP,CPPublic,CPMetrics,CPLogic controlplane
+    class DPPublic,DPControl,DPMetrics,DPProxy,DPLogic dataplane
+    class ConfigEnv,CustomCA config
+    class Postgres,Vault storage
+    class Portal,MASS external
