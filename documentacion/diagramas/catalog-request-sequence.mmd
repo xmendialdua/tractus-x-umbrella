@@ -1,0 +1,56 @@
+# Diagrama de Secuencia: Catalog Request (IKLN → MASS)
+
+Este diagrama muestra el flujo completo de una petición de catálogo desde el conector IKLN (Consumer) al conector MASS (Provider), incluyendo la obtención de credenciales mediante el protocolo IATP.
+
+```mermaid
+sequenceDiagram
+    participant IKLN as IKLN Control Plane
+    participant Proxy as DIM Wallet Proxy
+    participant Wallet as SSI Wallet Stub
+    participant MASS as MASS Control Plane
+    
+    IKLN->>Proxy: Request credentials for MASS
+    Proxy->>Wallet: Get DID document for MASS
+    Wallet-->>Proxy: DID document
+    Proxy->>Wallet: Get Verifiable Presentation
+    Wallet-->>Proxy: VP (JWT with VCs)
+    Proxy-->>IKLN: Credentials
+    IKLN->>MASS: Catalog request with VP
+    MASS->>Wallet: Verify VP and credentials
+    Wallet-->>MASS: Verification OK
+    MASS-->>IKLN: Catalog response
+```
+
+## Descripción del Flujo
+
+### Fase 1: Obtención de Credenciales (IKLN → Wallet)
+1. **Request credentials for MASS**: IKLN solicita las credenciales necesarias para autenticarse ante MASS
+2. **Get DID document for MASS**: El proxy consulta el documento DID de MASS desde el wallet
+3. **Get Verifiable Presentation**: El proxy solicita una Verifiable Presentation (VP) que contenga las Verifiable Credentials (VCs) necesarias
+4. **VP (JWT with VCs)**: El wallet genera un VP en formato JWT que incluye las credenciales verificables
+
+### Fase 2: Catalog Request con Autenticación (IKLN → MASS)
+5. **Credentials**: El proxy devuelve las credenciales a IKLN
+6. **Catalog request with VP**: IKLN envía la petición de catálogo a MASS incluyendo el VP en las cabeceras HTTP
+
+### Fase 3: Verificación y Respuesta (MASS → IKLN)
+7. **Verify VP and credentials**: MASS verifica la firma del VP y valida las credenciales contra el wallet
+8. **Verification OK**: El wallet confirma la validez de las credenciales
+9. **Catalog response**: MASS devuelve el catálogo con los assets disponibles
+
+## Componentes Involucrados
+
+- **IKLN Control Plane**: `https://edc-ikln-control.51.178.94.25.nip.io` (BPN: BPNL00000002IKLN)
+- **DIM Wallet Proxy**: `http://ssi-dim-wallet-proxy.portal.svc.cluster.local:8000`
+- **SSI Wallet Stub**: `http://ssi-dim-wallet-stub.51.178.94.25.nip.io` (Issuer: BPNL00000003CRHK)
+- **MASS Control Plane**: `https://edc-mass-control.51.178.94.25.nip.io` (BPN: BPNL00000000MASS)
+
+## Configuración Crítica
+
+Para que este flujo funcione correctamente, ambos conectores deben tener:
+
+```yaml
+EDC_IAM_DID_WEB_USE_HTTPS: "false"
+```
+
+Esto es necesario porque el SSI Wallet Stub está desplegado con HTTP, no HTTPS.
