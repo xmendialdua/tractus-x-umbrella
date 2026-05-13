@@ -59,7 +59,7 @@ tractusx-connector:
   controlplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
-      EDC_IAM_DID_WEB_USE_HTTPS: true
+      EDC_IAM_DID_WEB_USE_HTTPS: false
       # BDRS configuration with new property names (EDC v0.11.1+)
       TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
       TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
