@@ -134,6 +134,161 @@ graph TB
 
 ---
 
+## Arquitectura Detallada del Portal (Namespace: portal)
+
+El siguiente diagrama muestra la arquitectura interna del Portal Catena-X, incluyendo todos los servicios desplegados en el namespace `portal`. Los componentes están agrupados por su función dentro del ecosistema Tractus-X.
+
+```mermaid
+graph TB
+    subgraph "PORTAL CATENA-X - Namespace: portal"
+        
+        subgraph "Frontend & UI Services"
+            style Frontend_UI fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+            Portal[Portal Frontend<br/>:80<br/>UI Application]
+            PortalNginx[Portal NGINX<br/>:80<br/>Static Assets]
+        end
+        
+        subgraph "Backend Services & APIs"
+            style Backend_APIs fill:#e1f5fe,stroke:#0288d1,stroke-width:3px
+            PortalBackend[Portal Backend<br/>:8080<br/>Main API Gateway]
+            RegService[Registration Service<br/>:8080<br/>Company Onboarding]
+            AdminService[Administration Service<br/>:8080<br/>User & Role Management]
+            NotifService[Notification Service<br/>:8080<br/>Alerts & Messaging]
+            ProvService[Provisioning Service<br/>:8080<br/>Resource Provisioning]
+            ProcessWorker[Processes Worker<br/>Background Jobs]
+        end
+        
+        subgraph "Identity & Access Management - IAM"
+            style IAM fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+            CentralIDP[Central IDP<br/>Keycloak<br/>:8080<br/>Main Identity Provider<br/>Realm: CX-Central]
+            SharedIDP[Shared IDP<br/>Keycloak<br/>:8080<br/>Partner Identity Provider<br/>Realm: CX-Operator]
+            CentralIDPDB[(Central IDP DB<br/>PostgreSQL<br/>:5432)]
+            SharedIDPDB[(Shared IDP DB<br/>PostgreSQL<br/>:5432)]
+        end
+        
+        subgraph "SSI & Trust Layer - IATP Protocol"
+            style SSI_Trust fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+            WalletStub[SSI DIM Wallet Stub<br/>:8080<br/>DID Management<br/>Verifiable Credentials<br/>Issuer: BPNL00000003CRHK]
+            WalletProxy[DIM Wallet Proxy<br/>:8000<br/>Middleware Layer]
+            BDRS[BDRS Server<br/>:8081<br/>BPN Directory Resolution<br/>BPN → DID Mapping]
+            CredIssuer[SSI Credential Issuer<br/>:8080<br/>VC Issuance Service]
+            WalletDB[(Wallet DB<br/>PostgreSQL<br/>:5432)]
+        end
+        
+        subgraph "Business Partner Data Management - BPDM"
+            style BPDM fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+            BPDMGate[BPDM Gate<br/>:8081<br/>Company Entry Point]
+            BPDMPool[BPDM Pool<br/>:8080<br/>Golden Record Pool]
+            BPDMClean[BPDM Cleaning Service<br/>Data Validation]
+            BPDMBridge[BPDM Bridge<br/>Data Synchronization]
+            BPDMDB[(BPDM DB<br/>PostgreSQL<br/>:5432)]
+        end
+        
+        subgraph "Discovery Services"
+            style Discovery fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+            DiscFinder[Discovery Finder<br/>:8080<br/>Endpoint Discovery]
+            BPNDisc[BPN Discovery<br/>:8080<br/>BPN Lookup Service]
+        end
+        
+        subgraph "Data Persistence Layer"
+            style Persistence fill:#eceff1,stroke:#455a64,stroke-width:3px
+            PortalDB[(Portal Backend DB<br/>PostgreSQL<br/>:5432<br/>Main Application Data)]
+            Vault[Portal Keycloak Secret<br/>Vault<br/>:8200<br/>Secrets Management]
+        end
+    end
+    
+    %% Frontend connections
+    Portal -->|API Calls| PortalBackend
+    Portal -->|Static Content| PortalNginx
+    
+    %% Backend to IAM
+    PortalBackend -->|Authentication| CentralIDP
+    PortalBackend -->|Partner Auth| SharedIDP
+    RegService -->|Create Users| CentralIDP
+    AdminService -->|Manage Users| SharedIDP
+    
+    %% Backend to SSI/Trust
+    PortalBackend -->|DID Operations| WalletProxy
+    PortalBackend -->|BPN Resolution| BDRS
+    WalletProxy -->|Proxy Requests| WalletStub
+    CredIssuer -->|Issue VCs| WalletStub
+    WalletStub -->|Store DIDs/VCs| WalletDB
+    
+    %% Backend to BPDM
+    PortalBackend -->|Company Data| BPDMGate
+    RegService -->|Register Company| BPDMGate
+    BPDMGate -->|Validate & Store| BPDMPool
+    BPDMPool -->|Data Cleaning| BPDMClean
+    BPDMPool -->|Sync| BPDMBridge
+    BPDMPool -->|Persistence| BPDMDB
+    
+    %% Backend to Discovery
+    PortalBackend -->|Register Endpoints| BPNDisc
+    PortalBackend -->|Find Services| DiscFinder
+    BPNDisc -->|Query| DiscFinder
+    
+    %% Backend to Persistence
+    PortalBackend -->|Application Data| PortalDB
+    RegService -->|Store Registrations| PortalDB
+    AdminService -->|Store Config| PortalDB
+    NotifService -->|Store Notifications| PortalDB
+    ProcessWorker -->|Process Jobs| PortalDB
+    PortalBackend -->|Retrieve Secrets| Vault
+    
+    %% IAM to Persistence
+    CentralIDP -->|User Data| CentralIDPDB
+    SharedIDP -->|Partner Data| SharedIDPDB
+    CentralIDP -->|Secrets| Vault
+    SharedIDP -->|Secrets| Vault
+    
+    %% Styling
+    classDef frontendStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef backendStyle fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    classDef iamStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef trustStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef bpdmStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef discStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef dbStyle fill:#eceff1,stroke:#455a64,stroke-width:2px
+    
+    class Portal,PortalNginx frontendStyle
+    class PortalBackend,RegService,AdminService,NotifService,ProvService,ProcessWorker backendStyle
+    class CentralIDP,SharedIDP iamStyle
+    class WalletStub,WalletProxy,BDRS,CredIssuer trustStyle
+    class BPDMGate,BPDMPool,BPDMClean,BPDMBridge bpdmStyle
+    class DiscFinder,BPNDisc discStyle
+    class PortalDB,CentralIDPDB,SharedIDPDB,WalletDB,BPDMDB,Vault dbStyle
+```
+
+### Descripción de los Bloques Funcionales
+
+#### 1. Frontend & UI Services
+Servicios de interfaz de usuario que proporcionan la experiencia web del Portal Catena-X.
+
+#### 2. Backend Services & APIs
+Conjunto de microservicios que implementan la lógica de negocio del portal, incluyendo onboarding de empresas, gestión de usuarios, notificaciones y aprovisionamiento de recursos.
+
+#### 3. Identity & Access Management (IAM)
+Dos instancias de Keycloak que gestionan la autenticación y autorización:
+- **Central IDP**: Para usuarios del operador del dataspace
+- **Shared IDP**: Para usuarios de empresas participantes
+
+#### 4. SSI & Trust Layer (IATP Protocol)
+Capa de identidad auto-soberana que implementa el protocolo IATP (Identity and Trust Protocol) de Tractus-X:
+- **DIM Wallet Stub**: Gestión de DIDs (Decentralized Identifiers) y VCs (Verifiable Credentials)
+- **BDRS**: Resolución de BPN (Business Partner Number) a DID
+- **Credential Issuer**: Emisión de credenciales verificables
+
+#### 5. Business Partner Data Management (BPDM)
+Servicios para la gestión del "Golden Record" de datos de socios comerciales, incluyendo validación, limpieza y sincronización de datos empresariales.
+
+#### 6. Discovery Services
+Servicios de descubrimiento para localizar endpoints y resolver BPNs en el dataspace.
+
+#### 7. Data Persistence Layer
+Bases de datos PostgreSQL y Vault para almacenamiento persistente de datos de aplicación, identidades y secretos.
+
+---
+
 ## Componentes Principales por Namespace
 
 ### Namespace: `portal`
@@ -164,24 +319,14 @@ graph TB
 
 ### 1. Catalog Request (IKLN → MASS)
 
-```mermaid
-sequenceDiagram
-    participant IKLN as IKLN Control Plane
-    participant Proxy as DIM Wallet Proxy
-    participant Wallet as SSI Wallet Stub
-    participant MASS as MASS Control Plane
-    
-    IKLN->>Proxy: Request credentials for MASS
-    Proxy->>Wallet: Get DID document for MASS
-    Wallet-->>Proxy: DID document
-    Proxy->>Wallet: Get Verifiable Presentation
-    Wallet-->>Proxy: VP (JWT with VCs)
-    Proxy-->>IKLN: Credentials
-    IKLN->>MASS: Catalog request with VP
-    MASS->>Wallet: Verify VP and credentials
-    Wallet-->>MASS: Verification OK
-    MASS-->>IKLN: Catalog response
-```
+Flujo completo de una petición de catálogo desde el conector IKLN (Consumer) al conector MASS (Provider), incluyendo la obtención de credenciales mediante el protocolo IATP.
+
+📄 **Ver diagrama de secuencia completo:** [diagramas/catalog-request-sequence.mmd](diagramas/catalog-request-sequence.mmd)
+
+**Fases del flujo:**
+1. **Obtención de Credenciales**: IKLN obtiene VP (Verifiable Presentation) del wallet a través del proxy
+2. **Catalog Request con Autenticación**: IKLN envía la petición incluyendo el VP en las cabeceras
+3. **Verificación y Respuesta**: MASS verifica las credenciales y devuelve el catálogo
 
 ### 2. BPN to DID Resolution
 
