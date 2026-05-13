@@ -28,49 +28,47 @@ graph TB
         
         subgraph "Discovery"
             style Discovery_Layer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
-            Discovery[Discovery Services<br/>BPN Discovery<br/>Discovery Finder<br/>:8080]
-        end
-        
-        subgraph "Data Storage"
-            style Storage_Layer fill:#eceff1,stroke:#455a64,stroke-width:3px
-            Storage[Persistence Layer<br/>PostgreSQL Databases<br/>Vault Secrets<br/>:5432, :8200]
-        end
+        DiscoveryServices[Discovery Services<br/>BPN Discovery<br/>Discovery Finder<br/>:8080]
     end
     
-    %% External access
-    Internet[Internet / Users] -->|HTTPS| Frontend
-    
-    %% Main flows
-    Frontend -->|API Requests| Backend
-    Backend -->|Authentication| IAM
-    Backend -->|Company Data| BPDM
-    Backend -->|DID Operations| Trust
-    Backend -->|Endpoint Discovery| Discovery
-    Backend -->|Data Persistence| Storage
-    
-    IAM -->|Store Users| Storage
-    Trust -->|Store DIDs/VCs| Storage
-    BPDM -->|Store Partners| Storage
-    
-    %% External EDC Connectors
-    EDC[EDC Connectors<br/>namespace: umbrella] -.->|IATP Protocol| Trust
-    EDC -.->|BPN Resolution| Trust
-    
-    %% Styling
-    classDef frontendStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef backendStyle fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    classDef iamStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef trustStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef bpdmStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    classDef discStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef storageStyle fill:#eceff1,stroke:#455a64,stroke-width:2px
-    classDef externalStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px,stroke-dasharray: 5 5
-    
-    class Frontend frontendStyle
-    class Backend backendStyle
-    class IAM iamStyle
-    class Trust trustStyle
-    class BPDM bpdmStyle
-    class Discovery discStyle
-    class Storage storageStyle
-    class Internet,EDC externalStyle
+    subgraph "Data Storage"
+        style Storage_Layer fill:#eceff1,stroke:#455a64,stroke-width:3px
+        Storage[Persistence Layer<br/>PostgreSQL Databases<br/>Vault Secrets<br/>:5432, :8200]
+    end
+end
+
+%% External access
+Internet[Internet / Users] -->|HTTPS| Frontend
+
+%% Main flows
+Frontend -->|API Requests| Backend
+Backend -->|Authentication| IAM
+Backend -->|Company Data| BPDM
+Backend -->|DID Operations| Trust
+Backend -->|Endpoint Discovery| DiscoveryServices
+Backend -->|Data Persistence| Storage
+
+IAM -->|Store Users| Storage
+Trust -->|Store DIDs/VCs| Storage
+BPDM -->|Store Partners| Storage
+
+%% External EDC Connectors
+EDC[EDC Connectors<br/>namespace: umbrella] -.->|IATP Protocol| Trust
+EDC -.->|BPN Resolution| Trust
+
+%% Styling
+classDef frontendStyle fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+classDef backendStyle fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+classDef iamStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+classDef trustStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+classDef bpdmStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+classDef discStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+classDef storageStyle fill:#eceff1,stroke:#455a64,stroke-width:2px
+classDef externalStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px,stroke-dasharray: 5 5
+
+class Frontend frontendStyle
+class Backend backendStyle
+class IAM iamStyle
+class Trust trustStyle
+class BPDM bpdmStyle
+class DiscoveryServices discStyle
