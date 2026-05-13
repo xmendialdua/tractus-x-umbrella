@@ -1,0 +1,115 @@
+graph TB
+    subgraph "Internet"
+        User[Usuario Web Browser]
+        External[Conectores Externos]
+    end
+
+    subgraph "Ingress Layer - nginx (51.178.94.25)"
+        Ingress[NGINX Ingress Controller]
+    end
+
+    subgraph "Namespace: portal"
+        Portal[Portal Frontend]
+        PortalBackend[Portal Backend]
+        
+        subgraph "Identity & Auth"
+            CentralIDP[Central IDP<br/>Keycloak]
+            SharedIDP[Shared IDP<br/>Keycloak]
+        end
+        
+        subgraph "SSI & Trust"
+            WalletStub[SSI DIM Wallet Stub]
+            WalletProxy[DIM Wallet Proxy]
+            BDRS[BDRS Server<br/>BPN→DID Resolution]
+            CredIssuer[SSI Credential Issuer]
+        end
+        
+        subgraph "BPDM Services"
+            BPDMPool[BPDM Pool]
+            BPDMGate[BPDM Gate]
+            BPDMOrch[BPDM Orchestrator]
+        end
+        
+        subgraph "Discovery Services"
+            BPNDisc[BPN Discovery]
+            DiscFinder[Discovery Finder]
+        end
+        
+        subgraph "Databases - Portal"
+            PortalDB[(Portal PostgreSQL)]
+            BPDMDB[(BPDM PostgreSQL)]
+            WalletDB[(Wallet PostgreSQL)]
+        end
+    end
+
+    subgraph "Namespace: umbrella"
+        subgraph "IKLN Connector - BPNL00000002IKLN"
+            IKLNControl[Control Plane]
+            IKLNData[Data Plane]
+            IKLNPostgres[(PostgreSQL)]
+            IKLNVault[Vault]
+        end
+        
+        subgraph "MASS Connector - BPNL00000000MASS"
+            MASSControl[Control Plane]
+            MASSData[Data Plane]
+            MASSPostgres[(PostgreSQL)]
+            MASSVault[Vault]
+        end
+    end
+
+    %% User connections
+    User -->|HTTPS| Ingress
+    External -->|HTTPS| Ingress
+    
+    %% Ingress routing
+    Ingress -->|portal.*| Portal
+    Ingress -->|centralidp.*| CentralIDP
+    Ingress -->|edc-ikln-control.*| IKLNControl
+    Ingress -->|edc-mass-control.*| MASSControl
+    
+    %% Portal connections
+    Portal -->|API| PortalBackend
+    PortalBackend -->|Auth| CentralIDP
+    PortalBackend -->|BPDM| BPDMGate
+    PortalBackend -->|Database| PortalDB
+    
+    %% EDC Connector connections
+    IKLNControl -->|Catalog Request| MASSControl
+    IKLNControl -->|DID Resolution| WalletProxy
+    IKLNControl -->|BPN→DID| BDRS
+    IKLNControl -->|Database| IKLNPostgres
+    IKLNControl -->|Secrets| IKLNVault
+    IKLNData -->|Data Transfer| MASSData
+    
+    MASSControl -->|DID Resolution| WalletProxy
+    MASSControl -->|BPN→DID| BDRS
+    MASSControl -->|Database| MASSPostgres
+    MASSControl -->|Secrets| MASSVault
+    
+    %% Wallet & Identity
+    WalletProxy -->|Proxy| WalletStub
+    WalletStub -->|Database| WalletDB
+    CredIssuer -->|Issue VCs| WalletStub
+    
+    %% BPDM connections
+    BPDMGate -->|Pool API| BPDMPool
+    BPDMPool -->|Orchestrator| BPDMOrch
+    BPDMPool -->|Database| BPDMDB
+    
+    %% Discovery
+    PortalBackend -->|Register| BPNDisc
+    BPNDisc -->|Find| DiscFinder
+    
+    %% Styling
+    classDef portalClass fill:#e1f5ff,stroke:#0288d1
+    classDef edcClass fill:#fff3e0,stroke:#f57c00
+    classDef identityClass fill:#f3e5f5,stroke:#7b1fa2
+    classDef dbClass fill:#e8f5e9,stroke:#388e3c
+    classDef ingressClass fill:#ffebee,stroke:#c62828
+    
+    class Portal,PortalBackend portalClass
+    class IKLNControl,IKLNData,MASSControl,MASSData edcClass
+    class CentralIDP,SharedIDP,WalletStub,WalletProxy,BDRS,CredIssuer identityClass
+    class PortalDB,BPDMDB,WalletDB,IKLNPostgres,MASSPostgres dbClass
+    class Ingress ingressClass
