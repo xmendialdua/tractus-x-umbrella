@@ -1,0 +1,179 @@
+# #############################################################################
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+# #############################################################################
+---
+tractusx-connector:
+  nameOverride: cstm-edc
+  participant:
+    id: BPNL00000003CSTM
+  customCaCerts:
+    tractus-x-ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      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
+      -----END CERTIFICATE-----
+  iatp:
+    id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CSTM
+    trustedIssuers:
+      - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
+    sts:
+      dim:
+        url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api/sts
+      oauth:
+        token_url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/oauth/token
+        client:
+          id: BPNL00000003CSTM
+          secret_alias: edc-wallet-secret
+  controlplane:
+    env:
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      EDC_IAM_DID_WEB_USE_HTTPS: false
+      # BDRS configuration with new property names (EDC v0.11.1+)
+      TX_EDC_IAM_IATP_BDRS_SERVER_URL: http://bdrs-server.portal.svc.cluster.local:8082/api/directory
+      TX_EDC_IAM_IATP_BDRS_CACHE_VALIDITY: "600"
+      EDC_IAM_STS_OAUTH_TOKEN_SIGNING_ALGORITHM: "ES256K"
+    bdrs:
+      server:
+        url: http://bdrs-server.portal:8082/api/directory
+    endpoints:
+      management:
+        authKey: cstm-api-key-change-in-production
+    # Recursos reducidos para evitar problemas de CPU en el cluster
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+    ingresses:
+      - enabled: true
+        hostname: "edc-cstm-control.51.178.94.25.nip.io"
+        endpoints:
+          - default
+          - protocol
+          - management
+        className: "nginx"
+        tls:
+          enabled: true
+          secretName: "edc-cstm-control-tls"
+  dataplane:
+    env:
+      TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
+      EDC_IAM_DID_WEB_USE_HTTPS: true
+      EDC_DATAPLANE_TOKEN_SIGNING_ALGORITHM: "ES256K"
+      EDC_TRANSFER_PROXY_TOKEN_SIGNER_PRIVATEKEY_ALIAS: "tokenSignerPrivateKey"
+      EDC_TRANSFER_PROXY_TOKEN_VERIFIER_PUBLICKEY_ALIAS: "tokenSignerPublicKey"
+    # Recursos reducidos para evitar problemas de CPU en el cluster
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+    ingresses:
+      - enabled: true
+        hostname: "edc-cstm-data.51.178.94.25.nip.io"
+        endpoints:
+          - default
+          - public
+        className: "nginx"
+        tls:
+          enabled: true
+          secretName: "edc-cstm-data-tls"
+    token:
+      signer:
+        privatekey_alias: tokenSignerPrivateKey
+      verifier:
+        publickey_alias: tokenSignerPublicKey
+  postgresql:
+    nameOverride: postgresql
+    jdbcUrl: "jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/edc"
+    auth:
+      password: "dbpassworddataconsumerone"
+      postgresPassword: "dbpassworddataconsumerone"
+  vault:
+    hashicorp:
+      url: http://{{ .Release.Name }}-vault:8200
+      token: "root"
+      paths:
+        secret: "/v1/secret"
+        folder: ""  
+    secretNames:
+      transferProxyTokenSignerPrivateKey: tokenSignerPrivateKey
+      transferProxyTokenSignerPublicKey: tokenSignerPublicKey
+      transferProxyTokenEncryptionAesKey: tokenEncryptionAesKey
+
+vault:
+  enabled: true
+  server:
+    standalone:
+      enabled: true
+    dev:
+      enabled: true
+      devRootToken: "root"
+  nameOverride: vault
+  fullnameOverride: ""
+
+postgresql:
+  enabled: true
+  auth:
+    database: "edc"
+    username: "user"
+    password: "dbpassworddataconsumerone"
+    postgresPassword: "dbpassworddataconsumerone"
+  # Recursos reducidos para evitar problemas de CPU en el cluster
+  primary:
+    resources:
+      limits:
+        cpu: 150m
+        memory: 192Mi
+        ephemeral-storage: 1Gi
+      requests:
+        cpu: 50m
+        memory: 96Mi
+        ephemeral-storage: 50Mi
+

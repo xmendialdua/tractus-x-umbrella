@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bdrs-reseed-fixed-v2
+  namespace: portal
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: bdrs-seeding-v2
+        image: alpine:3.19
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - |
+          apk add --no-cache wget
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000003CRHK","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL000000000065","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL000000000065"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000000015G","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000015G"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000000MASS","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000000MASS"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -
+          wget --header="Content-Type: application/json" --header="x-api-key: TEST" \
+            --post-data='{"bpn":"BPNL00000002IKLN","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000002IKLN"}' \
+            "http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory" -S -O -

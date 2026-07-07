@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bdrs-manual-seeding-v3
+  namespace: portal
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: seeder
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache wget
+          # Registrar cada BPN
+          for bpn_data in \
+            "BPNL00000003CRHK:CRHK" \
+            "BPNL000000000065:0065" \
+            "BPNL00000000015G:015G" \
+            "BPNL00000000MASS:MASS" \
+            "BPNL00000002IKLN:IKLN" \
+            "BPNL00000003PRTA:PRTA" \
+            "BPNL00000004PRTB:PRTB"; do
+            bpn=${bpn_data%%:*}
+            wget --post-data='{"bpn":"'"$bpn"'","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:'"$bpn"'"}' \
+              --header='Content-Type: application/json' \
+              --header='x-api-key: TEST' \
+              -O- \
+              http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory
+          done
