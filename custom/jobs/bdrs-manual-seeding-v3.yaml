@@ -28,6 +28,6 @@ spec:
             wget --post-data='{"bpn":"'"$bpn"'","did":"did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:'"$bpn"'"}' \
               --header='Content-Type: application/json' \
               --header='x-api-key: TEST' \
-              -O- \
+              -S -O- \
               http://bdrs-server.portal.svc.cluster.local:8081/api/management/bpn-directory
           done
