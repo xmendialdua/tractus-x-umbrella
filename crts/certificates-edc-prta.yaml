@@ -1,0 +1,38 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-prta-control-tls
+  namespace: umbrella
+spec:
+  secretName: edc-prta-control-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-prta-control.51.178.94.25.nip.io
+  dnsNames:
+    - edc-prta-control.51.178.94.25.nip.io
+  issuerRef:
+    name: my-ca-issuer
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: edc-prta-data-tls
+  namespace: umbrella
+spec:
+  secretName: edc-prta-data-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Tractus-X
+  commonName: edc-prta-data.51.178.94.25.nip.io
+  dnsNames:
+    - edc-prta-data.51.178.94.25.nip.io
+  issuerRef:
+    name: my-ca-issuer
+    kind: ClusterIssuer
+
