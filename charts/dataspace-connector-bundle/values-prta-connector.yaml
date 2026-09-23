@@ -18,9 +18,9 @@
 # #############################################################################
 ---
 tractusx-connector:
-  nameOverride: cstm-edc
+  nameOverride: prta-edc
   participant:
-    id: BPNL00000003CSTM
+    id: BPNL00000003PRTA
   customCaCerts:
     tractus-x-ca.crt: |
       -----BEGIN CERTIFICATE-----
@@ -55,7 +55,7 @@ tractusx-connector:
       RJWug6re67RFDLgL/uGSyFxxGK3lJUxexvStR3AQCBai37vp8qtGHu6t
       -----END CERTIFICATE-----
   iatp:
-    id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CSTM
+    id: did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003PRTA
     trustedIssuers:
       - did:web:ssi-dim-wallet-stub.51.178.94.25.nip.io:BPNL00000003CRHK
     sts:
@@ -64,7 +64,7 @@ tractusx-connector:
       oauth:
         token_url: http://dim-wallet-proxy.portal.svc.cluster.local:8080/oauth/token
         client:
-          id: BPNL00000003CSTM
+          id: BPNL00000003PRTA
           secret_alias: edc-wallet-secret
   controlplane:
     env:
@@ -79,7 +79,7 @@ tractusx-connector:
         url: http://bdrs-server.portal:8082/api/directory
     endpoints:
       management:
-        authKey: cstm-api-key-change-in-production
+        authKey: prta-api-key-change-in-production
     # Recursos reducidos para evitar problemas de CPU en el cluster
     resources:
       limits:
@@ -90,7 +90,7 @@ tractusx-connector:
         memory: 128Mi
     ingresses:
       - enabled: true
-        hostname: "edc-cstm-control.51.178.94.25.nip.io"
+        hostname: "edc-prta-control.51.178.94.25.nip.io"
         endpoints:
           - default
           - protocol
@@ -98,7 +98,7 @@ tractusx-connector:
         className: "nginx"
         tls:
           enabled: true
-          secretName: "edc-cstm-control-tls"
+          secretName: "edc-prta-control-tls"
   dataplane:
     env:
       TX_IAM_IATP_CREDENTIALSERVICE_URL: http://dim-wallet-proxy.portal.svc.cluster.local:8080/api
@@ -116,14 +116,14 @@ tractusx-connector:
         memory: 128Mi
     ingresses:
       - enabled: true
-        hostname: "edc-cstm-data.51.178.94.25.nip.io"
+        hostname: "edc-prta-data.51.178.94.25.nip.io"
         endpoints:
           - default
           - public
         className: "nginx"
         tls:
           enabled: true
-          secretName: "edc-cstm-data-tls"
+          secretName: "edc-prta-data-tls"
     token:
       signer:
         privatekey_alias: tokenSignerPrivateKey
