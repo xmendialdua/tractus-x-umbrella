@@ -1,0 +1,5 @@
+# Excluir archivos de backup y originales
+iam/centralidp/*-original.json
+iam/centralidp/*.backup-*
+iam/sharedidp/*-original.json
+iam/sharedidp/*.backup-*

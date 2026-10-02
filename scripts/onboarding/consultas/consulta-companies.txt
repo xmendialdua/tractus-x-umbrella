@@ -1,0 +1,4 @@
+# Consultar las compañias
+
+ kubectl exec -n portal portal-portal-backend-postgresql-0 --   env PGPASSWORD="dbpasswordportal" psql -U portal -d postgres -c "
+  SELECT * FROM portal.companies ;"

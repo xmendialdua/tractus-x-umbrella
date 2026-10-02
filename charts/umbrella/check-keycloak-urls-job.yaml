@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-keycloak-urls
+  namespace: portal
+spec:
+  template:
+    spec:
+      containers:
+      - name: check-urls
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "=========================================="
+            echo "Checking Keycloak URLs in Database"
+            echo "=========================================="
+            
+            export PGPASSWORD="${POSTGRES_PASSWORD_CENTRAL}"
+            
+            echo ""
+            echo "=== CENTRAL IDP - Client URLs ==="
+            psql -h portal-centralidp-postgresql -U kccentral -d iamcentralidp <<EOF
+            SELECT client_id, root_url, base_url FROM client 
+            WHERE client_id IN ('Cl2-CX-Portal', 'Cl1-CX-Registration', 'Cl3-CX-Semantic', 
+                                'Cl5-CX-Custodian', 'Cl7-CX-BPDM', 'Cl16-CX-BPDMGate', 
+                                'security-admin-console')
+            ORDER BY client_id;
+            EOF
+            
+            echo ""
+            echo "=== CENTRAL IDP - Redirect URIs with tx.test ==="
+            psql -h portal-centralidp-postgresql -U kccentral -d iamcentralidp <<EOF
+            SELECT c.client_id, r.value as redirect_uri
+            FROM redirect_uris r
+            JOIN client c ON r.client_id = c.id
+            WHERE r.value LIKE '%tx.test%'
+            ORDER BY c.client_id;
+            EOF
+            
+            echo ""
+            echo "=== CENTRAL IDP - All Redirect URIs for Portal clients ==="
+            psql -h portal-centralidp-postgresql -U kccentral -d iamcentralidp <<EOF
+            SELECT c.client_id, r.value as redirect_uri
+            FROM redirect_uris r
+            JOIN client c ON r.client_id = c.id
+            WHERE c.client_id LIKE 'Cl%'
+            ORDER BY c.client_id, r.value;
+            EOF
+            
+            export PGPASSWORD="${POSTGRES_PASSWORD_SHARED}"
+            
+            echo ""
+            echo "=== SHARED IDP - Identity Provider Config ==="
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp <<EOF
+            SELECT ip.alias, ipc.name, ipc.value
+            FROM identity_provider_config ipc
+            JOIN identity_provider ip ON ipc.identity_provider_id = ip.internal_id
+            WHERE ipc.name IN ('authorizationUrl', 'tokenUrl', 'logoutUrl', 'jwksUrl')
+            ORDER BY ip.alias, ipc.name;
+            EOF
+            
+            echo ""
+            echo "=== SHARED IDP - Client for central-idp ==="
+            psql -h portal-sharedidp-postgresql -U kcshared -d iamsharedidp <<EOF
+            SELECT client_id, root_url, base_url FROM client 
+            WHERE client_id = 'central-idp'
+            ORDER BY client_id;
+            EOF
+            
+            echo ""
+            echo "=========================================="
+            echo "Check completed!"
+            echo "=========================================="
+        env:
+        - name: POSTGRES_PASSWORD_CENTRAL
+          valueFrom:
+            secretKeyRef:
+              name: portal-centralidp-postgresql
+              key: password
+        - name: POSTGRES_PASSWORD_SHARED
+          valueFrom:
+            secretKeyRef:
+              name: portal-sharedidp-postgresql
+              key: password
+      restartPolicy: Never
+  backoffLimit: 2

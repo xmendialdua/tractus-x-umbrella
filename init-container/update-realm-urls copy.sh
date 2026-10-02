@@ -28,33 +28,26 @@ IAM_DIR="${SCRIPT_DIR}/iam"
 
 # Función para reemplazar URLs en un archivo
 update_realm_file() {
-    local original_file="$1"
-    local target_file="$2"
-    local backup="${target_file}.backup-$(date +%Y%m%d-%H%M%S)"
+    local file="$1"
+    local backup="${file}.backup-$(date +%Y%m%d-%H%M%S)"
     
-    if [ ! -f "$original_file" ]; then
-        echo "⚠️  Archivo original no encontrado: $original_file"
+    if [ ! -f "$file" ]; then
+        echo "⚠️  Archivo no encontrado: $file"
         return 1
     fi
     
-    echo "📝 Procesando: $(basename $original_file) -> $(basename $target_file)"
+    echo "📝 Procesando: $(basename $file)"
     
-    # Crear backup del archivo destino si existe
-    if [ -f "$target_file" ]; then
-        cp "$target_file" "$backup"
-        echo "   ✅ Backup del archivo existente: $(basename $backup)"
-    fi
-    
-    # Copiar desde original
-    cp "$original_file" "$target_file"
-    echo "   ✅ Copiado desde: $(basename $original_file)"
+    # Crear backup
+    cp "$file" "$backup"
+    echo "   ✅ Backup creado: $(basename $backup)"
     
     # Reemplazar URLs (usamos sed con delimitador | para evitar conflictos con /)
-    sed -i "s|${OLD_DOMAIN}|${NEW_DOMAIN}|g" "$target_file"
+    sed -i "s|${OLD_DOMAIN}|${NEW_DOMAIN}|g" "$file"
     
     # Contar reemplazos
-    local changes=$(grep -c "${NEW_DOMAIN}" "$target_file" || true)
-    echo "   ✅ URLs actualizadas: $changes ocurrencias de ${NEW_DOMAIN}"
+    local changes=$(diff "$backup" "$file" | grep -c "^[<>]" || true)
+    echo "   ✅ Cambios realizados: $((changes / 2)) líneas modificadas"
     
     return 0
 }
@@ -63,17 +56,18 @@ update_realm_file() {
 echo ""
 echo "🔹 CentralIDP"
 echo "----------------------------------------"
-update_realm_file "${IAM_DIR}/centralidp/CX-Central-realm-original.json" "${IAM_DIR}/centralidp/CX-Central-realm.json"
+update_realm_file "${IAM_DIR}/centralidp/CX-Central-realm.json"
+
+if [ -f "${IAM_DIR}/centralidp/CX-Central-realm_MAssembly.json" ]; then
+    update_realm_file "${IAM_DIR}/centralidp/CX-Central-realm_MAssembly.json"
+fi
 
 # Procesar sharedidp
 echo ""
 echo "🔹 SharedIDP"
 echo "----------------------------------------"
-if [ -f "${IAM_DIR}/sharedidp/CX-Operator-realm-original.json" ]; then
-    update_realm_file "${IAM_DIR}/sharedidp/CX-Operator-realm-original.json" "${IAM_DIR}/sharedidp/CX-Operator-realm.json"
-elif [ -f "${IAM_DIR}/sharedidp/CX-Operator-realm.json" ]; then
-    echo "⚠️  No se encontró archivo original, procesando directamente CX-Operator-realm.json"
-    update_realm_file "${IAM_DIR}/sharedidp/CX-Operator-realm.json" "${IAM_DIR}/sharedidp/CX-Operator-realm.json"
+if [ -f "${IAM_DIR}/sharedidp/CX-Operator-realm.json" ]; then
+    update_realm_file "${IAM_DIR}/sharedidp/CX-Operator-realm.json"
 else
     echo "⚠️  No se encontró archivo de realm para sharedidp"
 fi

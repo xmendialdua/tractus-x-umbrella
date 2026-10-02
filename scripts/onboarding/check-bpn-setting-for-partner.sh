@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # -----------------------------------------------------------------------------
-# Script: check-bnp-setting-for-partner.sh
+# Script: check-bpn-setting-for-partner.sh
 # Fecha: 2026-07-01
 #
 # Problema:

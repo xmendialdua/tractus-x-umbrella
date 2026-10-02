@@ -1,0 +1,4 @@
+curl -sk -X DELETE \
+  "https://edc-mass-control.51.178.94.25.nip.io/management/v3/policydefinitions/access-policy-bpnl00000003prta" \
+  -H "X-Api-Key: mass-api-key-change-in-production" \
+  -w "\nHTTP %{http_code}" 2>/dev/null

@@ -19,9 +19,11 @@
 
 FROM alpine:3.19
 
-RUN mkdir import
+RUN mkdir -p import/catenax-central/realms && \
+    mkdir -p import/catenax-shared/realms
 
 RUN chown -R 1000:3000 /import
 USER 1000:3000
 
 COPY iam/centralidp/ import/catenax-central/realms
+COPY iam/sharedidp/ import/catenax-shared/realms
